@@ -1,0 +1,73 @@
+{% extends 'adminpanel/base_admin.html' %}
+{% block title %}Brands | SmashStrix{% endblock %}
+
+{% block content %}
+<div class="flex justify-between mb-6">
+  <h2 class="text-2xl font-bold">Brands</h2>
+  <a href="{% url 'admin_brand_add' %}" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
+    Add Brand
+  </a>
+</div>
+
+<form method="GET" class="mb-4 flex gap-2">
+    <input type="text" name="search" value="{{ search }}" placeholder="Search Brands..."
+           class="border p-2 rounded w-64">
+    <button class="bg-blue-700 text-white px-3 py-2 rounded">Search</button>
+    <a href="{% url 'admin_brands' %}" class="bg-gray-500 text-white px-3 py-2 rounded">Clear</a>
+</form>
+
+<table class="w-full bg-white shadow-md rounded mt-4">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="p-3 text-left">Logo</th>
+      <th class="p-3 text-left">Brand Name</th>
+      <th class="p-3">Status</th>
+      <th class="p-3">Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for brand in brands %}
+    <tr class="border-b">
+      <td class="p-3">
+        {% if brand.logo and brand.logo.url %}
+          <img src="{{ brand.logo.url }}" class="h-10">
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td class="p-3">{{ brand.name }}</td>
+
+      <td class="p-3">
+        {% if brand.active %}
+          <span class="text-green-600 font-semibold">Active</span>
+        {% else %}
+          <span class="text-red-600 font-semibold">Inactive</span>
+        {% endif %}
+      </td>
+
+      <td class="p-3 flex gap-3">
+        <a href="{% url 'admin_brand_edit' brand.id %}" class="text-blue-600 hover:underline">Edit</a>
+        <a href="{% url 'admin_brand_delete' brand.id %}" class="text-red-600 hover:underline"
+           onclick="return confirm('Are you sure?')">
+           Delete
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-4">
+  {% if brands.has_previous %}
+    <a href="?page={{ brands.previous_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Previous</a>
+  {% endif %}
+
+  <span class="mx-2">Page {{ brands.number }} of {{ brands.paginator.num_pages }}</span>
+
+  {% if brands.has_next %}
+    <a href="?page={{ brands.next_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Next</a>
+  {% endif %}
+</div>
+
+{% endblock %}

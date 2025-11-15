@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Home - SmashStrix{% endblock %}
+{% block content %}
+
+<!-- Hero Section -->
+<section class="relative text-white text-center">
+  <div class="hero-bg h-[400px] bg-cover bg-center flex flex-col justify-center items-center"
+       style="background-image: url('{% static 'user/images/hero-banner.webp' %}')">
+    <h1 class="text-4xl font-bold drop-shadow-lg">Premium Badminton Gear</h1>
+    <p class="text-xl mt-2 drop-shadow-lg">Elevate Your Game</p>
+    <button class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Shop Now</button>
+  </div>
+</section>
+
+<!-- Brands Section -->
+<section class="container mx-auto py-10 text-center">
+  <h2 class="text-2xl font-semibold">BRANDS YOU LOVE</h2>
+  <p class="mt-2 text-gray-600">NOW IN SmashStrix!</p>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+    <div class="p-4 border rounded bg-white shadow">
+      <img src="{% static 'user/images/yonex.png' %}" alt="Yonex" class="mx-auto h-16">
+      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
+    </div>
+    <div class="p-4 border rounded bg-white shadow">
+      <img src="{% static 'user/images/lining.jpeg' %}" alt="Li-Ning" class="mx-auto h-16">
+      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
+    </div>
+    <div class="p-4 border rounded bg-white shadow">
+      <img src="{% static 'user/images/ashaway.png' %}" alt="Ashaway" class="mx-auto h-16">
+      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
+    </div>
+    <div class="p-4 border rounded bg-white shadow">
+      <img src="{% static 'user/images/apacs.png' %}" alt="Apacs" class="mx-auto h-16">
+      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
+    </div>
+  </div>
+</section>
+
+<!-- Product Showcase -->
+<section class="container mx-auto py-10 text-center">
+  <h2 class="text-2xl font-semibold">WITH SO MANY CHOICES</h2>
+  <p class="mt-2 text-gray-600">Small prices for big joy!</p>
+  <div id="product-showcase" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6"></div>
+</section>
+
+<!-- Best Under ₹999 -->
+<section class="container mx-auto py-10 text-center bg-gray-50">
+  <h2 class="text-2xl font-semibold">BEST UNDER ₹999</h2>
+  <p class="mt-2 text-gray-600">Small prices for big joy!</p>
+  <div id="best-under" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6"></div>
+</section>
+
+<!-- For All Ages -->
+<section class="container mx-auto py-10 text-center">
+  <h2 class="text-2xl font-semibold">FOR ALL AGES !!</h2>
+  <p class="mt-2 text-gray-600">Small prices for big joy!</p>
+  <div id="for-all-ages" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6"></div>
+</section>
+
+<!-- Feel Good Deals -->
+<section class="container mx-auto py-10 text-center bg-gray-50">
+  <h2 class="text-2xl font-semibold">FEEL-GOOD DEALS</h2>
+  <p class="mt-2 text-gray-600">Enjoy extra treats for you and your game!</p>
+  <div id="feel-good-deals" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6"></div>
+</section>
+
+<!-- Super Deals -->
+<section class="container mx-auto py-10 text-center">
+  <h2 class="text-2xl font-semibold">SUPER DEALS</h2>
+  <p class="mt-2 text-gray-600">Small prices for big joy!</p>
+  <div id="super-deals" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6"></div>
+</section>
+
+<!-- Newsletter -->
+<section class="bg-gray-100 py-10 text-center">
+  <h2 class="text-2xl font-semibold">Subscribe now and be the first to know about exclusive offers!</h2>
+  <form class="mt-4 flex justify-center">
+    <input type="email" placeholder="Enter your email" class="p-2 border rounded-l w-64">
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r">Subscribe</button>
+  </form>
+</section>
+
+{% endblock %}

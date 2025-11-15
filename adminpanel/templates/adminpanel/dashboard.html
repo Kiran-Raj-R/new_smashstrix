@@ -1,0 +1,123 @@
+{% extends 'adminpanel/base_admin.html' %}
+{% block title %}Dashboard | SmashStrix Admin{% endblock %}
+
+{% block content %}
+
+<h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
+
+  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Users</h2>
+        <p class="text-3xl font-bold text-blue-700">{{ total_users }}</p>
+      </div>
+      <i class="ri-user-3-line text-4xl text-blue-600"></i>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Products</h2>
+        <p class="text-3xl font-bold text-green-700">{{ total_products }}</p>
+      </div>
+      <i class="ri-shopping-bag-3-line text-4xl text-green-600"></i>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Categories</h2>
+        <p class="text-3xl font-bold text-purple-700">{{ total_categories }}</p>
+      </div>
+      <i class="ri-price-tag-3-line text-4xl text-purple-600"></i>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Brands</h2>
+        <p class="text-3xl font-bold text-orange-700">{{ total_brands }}</p>
+      </div>
+      <i class="ri-store-2-line text-4xl text-orange-600"></i>
+    </div>
+  </div>
+
+  <!-- <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition opacity-60 cursor-not-allowed">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Orders</h2>
+        <p class="text-3xl font-bold text-gray-500">Soon</p>
+      </div>
+      <i class="ri-file-list-3-line text-4xl text-gray-400"></i>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition opacity-60 cursor-not-allowed">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-700">Total Sales</h2>
+        <p class="text-3xl font-bold text-gray-500">Soon</p>
+      </div>
+      <i class="ri-bar-chart-box-line text-4xl text-gray-400"></i>
+    </div>
+  </div> -->
+
+</div>
+
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">Recent Users</h2>
+
+    <table class="w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="p-3 text-left">Email</th>
+          <th class="p-3 text-left">Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in recent_users %}
+        {% if not u.is_superuser %}
+          <tr class="border-b">
+            <td class="p-3">{{ u.email }}</td>
+            <td class="p-3">{{ u.date_joined|date:"d M Y" }}</td>
+          </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">Recent Products</h2>
+
+    <table class="w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="p-3 text-left">Product</th>
+          <th class="p-3 text-left">Brand</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in recent_products %}
+          <tr class="border-b">
+            <td class="p-3">{{ p.name }}</td>
+            <td class="p-3">{{ p.brand.name }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="p-4 text-gray-500" colspan="2">No products found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

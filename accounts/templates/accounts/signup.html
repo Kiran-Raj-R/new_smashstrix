@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up - SmashStrix{% endblock %}
+
+{% block content %}
+<style>
+  body {
+    background-color: #f9fafb;
+    font-family: 'Inter', 'Poppins', sans-serif;
+  }
+
+  .signup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+  }
+
+  .signup-card {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .signup-card h2 {
+    text-align: center;
+    color: #1e3a8a;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .signup-card label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .signup-card input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .signup-card input:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  /* 🔴 Highlight invalid fields */
+  .has-error input {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+  }
+
+  /* Password toggle button */
+  .password-wrapper {
+    position: relative;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6b7280;
+  }
+
+  .toggle-password:hover {
+    color: #374151;
+  }
+
+  /* Submit button */
+  .signup-card button {
+    width: 100%;
+    background-color: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 1rem;
+    transition: background 0.3s;
+  }
+
+  .signup-card button:hover {
+    background-color: #b91c1c;
+  }
+
+  /* Field error styling */
+  .errorlist {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: #dc2626;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  /* Non-field errors */
+  .non-field-errors {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+</style>
+
+<div class="signup-container">
+  <div class="signup-card">
+    <h2>Create Your Account</h2>
+
+    <form method="POST" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="non-field-errors">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+          {% if field.name == "password1" or field.name == "password2" %}
+            <div class="password-wrapper">
+              {{ field }}
+              <span class="toggle-password" data-target="{{ field.id_for_label }}">👁</span>
+            </div>
+          {% else %}
+              {{ field }}
+          {% endif %}
+
+          {% if field.errors %}
+            <ul class="errorlist">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <p style="text-align:center; margin-top:1rem; color:#6b7280;">
+      Already have an account?
+      <a href="{% url 'login' %}" style="color:#2563eb; text-decoration:none;">Login here</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.toggle-password').forEach(function (icon) {
+    icon.addEventListener('click', function () {
+      const inputId = this.getAttribute('data-target');
+      const input = document.getElementById(inputId);
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      this.textContent = isPassword ? '🙈' : '👁';
+    });
+  });
+</script>
+{% endblock %}

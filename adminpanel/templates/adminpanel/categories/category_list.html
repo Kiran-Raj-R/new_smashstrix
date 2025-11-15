@@ -1,0 +1,78 @@
+{% extends 'adminpanel/base_admin.html' %}
+{% block title %}Categories | SmashStrix{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold">Categories</h2>
+  <a href="{% url 'admin_category_add' %}" 
+     class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition">
+     Add Category
+  </a>
+</div>
+
+<!-- Search Form -->
+<form method="GET" class="flex gap-3 mb-4">
+  <input name="search" value="{{ search }}" placeholder="Search Categories..." 
+         class="border p-2 rounded w-64">
+  <button class="bg-blue-700 text-white px-4 py-2 rounded">Search</button>
+  <a href="{% url 'admin_categories' %}" class="bg-gray-500 text-white px-4 py-2 rounded">Clear</a>
+</form>
+
+<!-- Table -->
+<table class="w-full bg-white shadow rounded">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="p-3 text-left">Image</th>
+      <th class="p-3 text-left">Name</th>
+      <th class="p-3 text-left">Status</th>
+      <th class="p-3 text-left">Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for cat in categories %}
+    <tr class="border-b">
+      <td class="p-3">
+        {% if cat.image %}
+          <img src="{{ cat.image.url }}" class="h-10 w-10 object-cover rounded">
+        {% else %}
+          —
+        {% endif %}
+      </td>
+
+      <td class="p-3">{{ cat.name }}</td>
+
+      <td class="p-3">
+        {% if cat.active %}
+          <span class="text-green-600 font-semibold">Active</span>
+        {% else %}
+          <span class="text-red-600 font-semibold">Inactive</span>
+        {% endif %}
+      </td>
+
+      <td class="p-3">
+        <a href="{% url 'admin_category_edit' cat.id %}" class="text-blue-600 hover:underline">Edit</a>
+        <a href="{% url 'admin_category_delete' cat.id %}" 
+           class="text-red-600 hover:underline ml-4"
+           onclick="return confirm('Are you sure?')">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Pagination -->
+<div class="mt-4 flex items-center gap-4">
+  {% if categories.has_previous %}
+    <a href="?page={{ categories.previous_page_number }}" class="bg-gray-300 px-3 py-1 rounded">Prev</a>
+  {% endif %}
+
+  <span>Page {{ categories.number }} of {{ categories.paginator.num_pages }}</span>
+
+  {% if categories.has_next %}
+    <a href="?page={{ categories.next_page_number }}" class="bg-gray-300 px-3 py-1 rounded">Next</a>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+{%load static%}
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+<header class="bg-blue-800 text-white shadow-md">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="text-2xl font-bold flex items-center">
+            <span><a href="{% url 'home' %}">SmashStrix</a></span>
+        </div>
+
+        <div class="relative hidden sm:block">
+            <input type="text" id="search" placeholder="Search..." class="border rounded p-2 text-black w-64 focus:ring-2 focus:ring-blue-400 outline-none"/>
+            <button id="clear-search" class="absolute right-2 top-2 bg-red-500 text-white px-2 py-1 rounded hidden">X</button>
+        </div>
+
+        <div class="flex space-x-4 items-center">
+            <a href="#" class="relative hover:text-blue-200 transition transform hover:scale-110">
+            <i class="ri-shopping-cart-2-line"></i>
+        <!-- <span class="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{{ cart_items_count }}</span> -->
+            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="hover:text-blue-200 transition transform hover:scale-110">
+                <i class="ri-user-3-fill"></i>
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="hover:text-blue-200 transition transform hover:scale-110">
+                <i class="ri-user-line"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<div class="block sm:hidden bg-blue-700 px-4 py-2">
+  <div class="relative">
+    <input type="text" id="mobile-search" placeholder="Search..." class="w-full border rounded p-2 text-black focus:ring-2 focus:ring-blue-400 outline-none"/>
+    <button id="clear-mobile-search" class="absolute right-2 top-2 bg-red-500 text-white px-2 py-1 rounded hidden">X</button>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.getElementById("search");
+  const clearButton = document.getElementById("clear-search");
+
+  if (searchInput && clearButton) {
+    searchInput.addEventListener("input", () => {
+      clearButton.classList.toggle("hidden", searchInput.value === "");
+    });
+    clearButton.addEventListener("click", () => {
+      searchInput.value = "";
+      clearButton.classList.add("hidden");
+    });
+  }
+</script>
