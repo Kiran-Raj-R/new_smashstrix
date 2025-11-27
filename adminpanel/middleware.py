@@ -8,6 +8,6 @@ class AdminAccessMiddleware:
         path = request.path
         if path.startswith("/adminpanel/") and not (path.startswith("/adminpanel/login/") or 
                                                     path.startswith("/adminpanel/logout/")):        
-            if not request.user.is_authenticated or not request.user.is_superuser:
+            if not request.user.is_authenticated or not request.user.is_staff:
                 return redirect("admin_login")
         return self.get_response(request)

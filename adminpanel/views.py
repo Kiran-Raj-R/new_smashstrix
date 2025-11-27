@@ -11,7 +11,7 @@ from products.utils import resize_image
 from PIL import Image   
 
 def admin_login(request):
-    if request.user.is_authenticated and request.user.is_superuser:
+    if request.user.is_authenticated and request.user.is_staff:
         return redirect('admin_dashboard')
 
     if request.method == 'POST':
@@ -19,7 +19,7 @@ def admin_login(request):
         password = request.POST.get('password')
 
         user = authenticate(request,email=email,password=password)
-        if user is not None and user.is_superuser:
+        if user is not None and user.is_staff:
             login(request,user)
             return redirect('admin_dashboard')
         else:
@@ -93,7 +93,7 @@ def brand_add(request):
     return render(request, 'adminpanel/brands/brand_form.html', {'form':form})
 
 def brand_edit(request,pk):
-    brand = Brand.objects.filter(id=pk)
+    brand = Brand.objects.get(id=pk)
     if request.method == 'POST':
         form = BrandForm(request.POST, request.FILES, instance=brand)
         if form.is_valid():
@@ -106,7 +106,7 @@ def brand_edit(request,pk):
     return render(request,'adminpanel/brands/brand_form.html',{'form':form})
 
 def brand_delete(request,pk):
-    brand = Brand.objects.filter(id=pk)
+    brand = get_object_or_404(Brand,id=pk)
     brand.active = False
     brand.save()
     messages.success(request,"Brand deleted Successfully.")
@@ -139,7 +139,7 @@ def category_add(request):
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
 def category_edit(request,pk):
-    category = Category.objects.filter(id=pk)
+    category = Category.objects.get(id=pk)
 
     if request.method == 'POST':
         form = CategoryForm(request.POST,request.FILES,instance=category)
@@ -149,12 +149,12 @@ def category_edit(request,pk):
             return redirect('admin_categories')
     
     else:
-        form = Category(instance=category)
+        form = CategoryForm(instance=category)
     
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
 def category_delete(request,pk):
-    category = Category.objects.filter(id=pk)
+    category = Category.objects.get(id=pk)
     category.active=False
     category.save()
     messages.success(request,"Category deleted Successfully.")

@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 from . models import User
 from . utils import send_otp
-from .forms import UserSignupForm,UserloginForm
+from . forms import UserSignupForm,UserloginForm
 
 User = get_user_model()
 

@@ -8,7 +8,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
     blocked = models.BooleanField(default=False)
     otp = models.CharField(max_length=6,null=True,blank=True)
     otp_created = models.DateTimeField(null=True,blank=True)
