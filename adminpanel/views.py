@@ -2,7 +2,7 @@ from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Sum
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from django.core.paginator import Paginator
@@ -161,58 +161,76 @@ def category_delete(request,pk):
     return redirect('admin_categories')
 
 def product_add(request):
-    if request.method == 'POST':
+    print("FILES RECEIVED:", request.FILES)
+
+    if request.method == "POST":
         form = ProductForm(request.POST)
-        image_form = ProductImageForm(request.POST, request.FILES)        
+        image_form = ProductImageForm(request.POST, request.FILES)
+
+        print("PRODUCT FORM ERRORS:", form.errors)
+        print("IMAGE FORM ERRORS:", image_form.errors)
+
         if form.is_valid() and image_form.is_valid():
-            images = request.FILES.getlist("images")          
-            if len(images) < 3:
-                messages.error(request, "Upload at least 3 images.")
-                return redirect("admin_product_add")
             product = form.save()
-            for image in images:
-                img_obj = ProductImage.objects.create(product=product, image=image)
+
+            for img in request.FILES.getlist("images"):
+                img_obj = ProductImage.objects.create(product=product, image=img)
                 resize_image(img_obj.image.path)
-            messages.success(request, "Product added successfully.")
-            return redirect("admin_products")
+
+            messages.success(request, "Product added. Now add color variant.")
+            return redirect("admin_color_variant_add", product.id)
+
+        else:
+            messages.error(request, "Please fix the errors.")
+
     else:
         form = ProductForm()
         image_form = ProductImageForm()
 
-    context = {
+    return render(request, "adminpanel/products/product_form.html", {
         "form": form,
         "image_form": image_form,
-    }
-    return render(request, "adminpanel/products/product_form.html", context)
+        "product": None,
+    })
 
 def color_variant_add(request, product_id):
-    product = Product.objects.get(id=product_id)
+    product = get_object_or_404(Product,id=product_id)
+    variants = Product.colors.all()
 
     if request.method == "POST":
         form = ColorVariantForm(request.POST)
         if form.is_valid():
             variant = form.save(commit=False)
             variant.product = product
-            try:
-                variant.save()
-                messages.success(request, "Color variant added.")
-            except IntegrityError:
-                messages.error(request, "This color already exists for this product.")
-            return redirect("admin_product_edit", product_id)
+            variant.save()
+
+            product.stock = product.colors.aggregate(total=sum("stock"))["total"] or 0
+            product.save()
+            messages.success(request, "Color variant added.")
+            return redirect("admin_color_variant_add", product_id)
+        messages.error(request,"please fix the errors.")
     else:
         form = ColorVariantForm()
+    data = {
+        "form":form, "product":product, "variants":variants
+    }
 
     return render(request, "adminpanel/products/color_variant_form.html", {"form": form})
 
 def color_variant_delete(request, pk):
-    variant = ColorVariant.objects.get(id=pk)
-    product_id = variant.product.id
+    variant = get_object_or_404(ColorVariant, id=pk)
+    product = variant.product
     variant.delete()
+    product.stock = product.colors.aggregate(total=sum("stock"))["total"] or 0
+    product.save()
     messages.success(request,"Color variant deleted.")
-    return redirect("admin_product_edit", product_id)
+    return redirect("admin_color_variant_add", product.id)
 
 def product_edit(request, pk):
     product = get_object_or_404(Product, id=pk)
+    images = Product.objects.all()
+    variants = Product.colors.all()
+
     if request.method == "POST":
         form = ProductForm(request.POST, instance=product)
         image_form = ProductImageForm(request.POST, request.FILES)
@@ -223,7 +241,7 @@ def product_edit(request, pk):
                 img_obj = ProductImage.objects.create(product=product, image=img)
                 resize_image(img_obj.image.path)
             messages.success(request, "Product updated successfully.")
-            return redirect("admin_products")
+            return redirect("admin_product_edit",product.id)
         else:
             messages.error(request, "Please fix form errors.")
     else:
@@ -234,8 +252,8 @@ def product_edit(request, pk):
         "form": form,
         "image_form": image_form,
         "product": product,
-        "images": product.images.all(),
-        "variants": product.colors.all(),
+        "images": images,
+        "variants": variants,
     }
     return render(request, "adminpanel/products/product_form.html", context)
 
@@ -284,7 +302,7 @@ def resize_image(image_path, size=(800, 800)):
     img.save(image_path, optimize=True, quality=85)
 
 def product_image_delete(request, img_id):
-    img = ProductImage.objects.get(id=img_id)
+    img = get_object_or_404(ProductImage, id=img_id)
     product_id = img.product.id
     img.delete()
 

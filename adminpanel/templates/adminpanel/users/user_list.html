@@ -49,9 +49,9 @@
 
       <td class="p-3">
         {% if u.blocked %}
-          <a href="{% url 'admin_unblock_user' u.id %}" class="text-green-600 hover:underline"> Unblock</a>
+          <a href="#"onclick="confirmUnblock('{% url 'admin_unblock_user' u.id %}')" class="text-green-600 hover:underline">Unblock</a>
         {% else %}
-          <a href="{% url 'admin_block_user' u.id %}" onclick="return confirm('Block this user?')" class="text-red-600 hover:underline"> Block</a>
+          <a href="#"onclick="confirmBlock('{% url 'admin_block_user' u.id %}')" class="text-red-600 hover:underline">Block</a>
         {% endif %}
       </td>
 

@@ -2,15 +2,50 @@
 {% block title %}Add Color Variant{% endblock %}
 
 {% block content %}
-<h2 class="text-2xl font-bold mb-6">Add Color Variant</h2>
 
-<form method="POST" class="bg-white p-6 rounded shadow max-w-lg">
-  {% csrf_token %}
-  {{ form.as_p }}
+<div class="max-w-xl bg-white p-6 rounded shadow mb-8">
+  <h2 class="text-2xl font-bold mb-6">Add Color Variant for: 
+    <span class="text-blue-700">{{ product.name }}</span>
+  </h2>
 
-  <button class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
-    Save Variant
-  </button>
-</form>
+  <form method="POST" class="space-y-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
+      Save Variant
+    </button>
+  </form>
+</div>
+
+<div class="max-w-xl bg-white p-6 rounded shadow">
+  <h3 class="text-xl font-bold mb-4">Existing Variants</h3>
+
+  <table class="w-full">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="p-3 text-left">Color</th>
+        <th class="p-3 text-left">Stock</th>
+        <th class="p-3 text-left">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for variant in variants %}
+      <tr class="border-b">
+        <td class="p-3">{{ variant.get_color_display }}</td>
+        <td class="p-3">{{ variant.stock }}</td>
+        <td class="p-3">
+          <a href="#"onclick="confirmDelete('{% url 'admin_delete_color_variant' variant.id %}')"
+             class="text-red-600 hover:underline">
+             Delete
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="p-3 text-center">No variants yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 {% endblock %}
