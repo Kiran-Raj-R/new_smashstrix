@@ -1,51 +1,111 @@
 {% extends 'adminpanel/base_admin.html' %}
-{% block title %}Add Color Variant{% endblock %}
+{% block title %}Manage Color Variants{% endblock %}
 
 {% block content %}
 
-<div class="max-w-xl bg-white p-6 rounded shadow mb-8">
-  <h2 class="text-2xl font-bold mb-6">Add Color Variant for: 
-    <span class="text-blue-700">{{ product.name }}</span>
-  </h2>
+<div class="max-w-3xl mx-auto">
 
-  <form method="POST" class="space-y-4">
-    {% csrf_token %}
-    {{ form.as_p }}
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">
+        Manage Color Variants
+    </h1>
+    <p class="text-gray-500 mb-6">
+        Product: <span class="text-blue-700 font-semibold">{{ product.name }}</span>
+    </p>
 
-    <button class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
-      Save Variant
-    </button>
-  </form>
+    <div class="bg-white shadow rounded-xl p-6 mb-10 border border-gray-200">
+
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-700">Add New Variant</h2>
+
+            <a href="{% url 'admin_products' %}"
+               class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition shadow">
+                Finish & Go to Product List
+            </a>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label class="font-semibold text-gray-700">Color</label>
+                {{ form.color }}
+                {% if form.color.errors %}
+                <p class="text-red-600 text-sm">{{ form.color.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="font-semibold text-gray-700">Stock</label>
+                {{ form.stock }}
+                {% if form.stock.errors %}
+                <p class="text-red-600 text-sm">{{ form.stock.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <button
+                class="bg-green-600 hover:bg-green-700 transition text-white px-6 py-2 rounded-lg shadow"
+                type="submit">
+                Save Variant
+            </button>
+        </form>
+
+    </div>
+
+    <div class="bg-white shadow rounded-xl p-6 border border-gray-200">
+
+        <h2 class="text-xl font-bold text-gray-700 mb-4">
+            Existing Variants
+        </h2>
+
+        <table class="w-full border rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 text-gray-700">
+                <tr>
+                    <th class="p-3 text-left">Color</th>
+                    <th class="p-3 text-left">Stock</th>
+                    <th class="p-3 text-center">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for variant in variants %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3">{{ variant.get_color_display }}</td>
+                    <td class="p-3">{{ variant.stock }}</td>
+                    <td class="p-3 text-center">
+                        <button class="text-red-600 hover:text-red-800 font-semibold"onclick="confirmDelete('{% url 'admin_color_variant_delete' variant.id %}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="p-4 text-center text-gray-500">
+                        No variants added yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
 </div>
 
-<div class="max-w-xl bg-white p-6 rounded shadow">
-  <h3 class="text-xl font-bold mb-4">Existing Variants</h3>
-
-  <table class="w-full">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-3 text-left">Color</th>
-        <th class="p-3 text-left">Stock</th>
-        <th class="p-3 text-left">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for variant in variants %}
-      <tr class="border-b">
-        <td class="p-3">{{ variant.get_color_display }}</td>
-        <td class="p-3">{{ variant.stock }}</td>
-        <td class="p-3">
-          <a href="#"onclick="confirmDelete('{% url 'admin_delete_color_variant' variant.id %}')"
-             class="text-red-600 hover:underline">
-             Delete
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="3" class="p-3 text-center">No variants yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<script>
+function confirmDelete(deleteUrl) {
+    Swal.fire({
+        title: "Delete Variant?",
+        text: "This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Delete",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = deleteUrl;
+        }
+    });
+}
+</script>
 
 {% endblock %}

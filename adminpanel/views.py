@@ -1,12 +1,11 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
-from django.db import IntegrityError
-from django.db.models import Q, Sum
+from django.db.models import Q
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from django.core.paginator import Paginator
-from products.forms import BrandForm,CategoryForm,ProductForm,ProductImageForm,ColorVariantForm
+from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
 from PIL import Image   
 
@@ -161,101 +160,107 @@ def category_delete(request,pk):
     return redirect('admin_categories')
 
 def product_add(request):
-    print("FILES RECEIVED:", request.FILES)
 
     if request.method == "POST":
         form = ProductForm(request.POST)
-        image_form = ProductImageForm(request.POST, request.FILES)
 
-        print("PRODUCT FORM ERRORS:", form.errors)
-        print("IMAGE FORM ERRORS:", image_form.errors)
+        images = request.FILES.getlist("images")
 
-        if form.is_valid() and image_form.is_valid():
+        print("FILES RECEIVED:", request.FILES)
+        print("IMAGES LIST:", images)
+
+        if len(images) < 3:
+            return render(request, "adminpanel/products/product_form.html", {
+                "form": form,
+                "image_errors": "Please upload at least 3 images.",
+                "product": None,
+            })
+
+        if form.is_valid():
             product = form.save()
 
-            for img in request.FILES.getlist("images"):
-                img_obj = ProductImage.objects.create(product=product, image=img)
+            for img in images:
+                img_obj = ProductImage.objects.create(product=product,image=img)
                 resize_image(img_obj.image.path)
 
-            messages.success(request, "Product added. Now add color variant.")
+            messages.success(request, "Product added. Add color variants.")
             return redirect("admin_color_variant_add", product.id)
 
-        else:
-            messages.error(request, "Please fix the errors.")
+        messages.error(request, "Please fix the errors in the form.")
 
     else:
         form = ProductForm()
-        image_form = ProductImageForm()
 
     return render(request, "adminpanel/products/product_form.html", {
         "form": form,
-        "image_form": image_form,
         "product": None,
     })
 
 def color_variant_add(request, product_id):
-    product = get_object_or_404(Product,id=product_id)
-    variants = Product.colors.all()
+
+    product = get_object_or_404(Product, id=product_id)
 
     if request.method == "POST":
         form = ColorVariantForm(request.POST)
+
         if form.is_valid():
             variant = form.save(commit=False)
             variant.product = product
             variant.save()
 
-            product.stock = product.colors.aggregate(total=sum("stock"))["total"] or 0
+            product.stock = sum(v.stock for v in product.colors.all())
             product.save()
+
             messages.success(request, "Color variant added.")
-            return redirect("admin_color_variant_add", product_id)
-        messages.error(request,"please fix the errors.")
+            return redirect("admin_color_variant_add", product.id)
+
+        messages.error(request, "Please fix the errors.")
+
     else:
         form = ColorVariantForm()
-    data = {
-        "form":form, "product":product, "variants":variants
-    }
 
-    return render(request, "adminpanel/products/color_variant_form.html", {"form": form})
+    variants = product.colors.all()
 
-def color_variant_delete(request, pk):
-    variant = get_object_or_404(ColorVariant, id=pk)
+    return render(request, "adminpanel/products/color_variant_form.html", {
+        "form": form,
+        "product": product,
+        "variants": variants,
+    })
+
+
+def color_variant_delete(request, variant_id):
+    variant = get_object_or_404(ColorVariant, id=variant_id)
     product = variant.product
     variant.delete()
-    product.stock = product.colors.aggregate(total=sum("stock"))["total"] or 0
+    product.stock = sum(v.stock for v in product.colors.all())
     product.save()
-    messages.success(request,"Color variant deleted.")
+    messages.success(request, "Color variant deleted.")
     return redirect("admin_color_variant_add", product.id)
 
-def product_edit(request, pk):
-    product = get_object_or_404(Product, id=pk)
-    images = Product.objects.all()
-    variants = Product.colors.all()
+def product_edit(request, product_id):
+
+    product = get_object_or_404(Product, id=product_id)
 
     if request.method == "POST":
         form = ProductForm(request.POST, instance=product)
-        image_form = ProductImageForm(request.POST, request.FILES)
-        if form.is_valid() and image_form.is_valid():
+
+        if form.is_valid():
             form.save()
-            new_images = request.FILES.getlist("images")
-            for img in new_images:
-                img_obj = ProductImage.objects.create(product=product, image=img)
-                resize_image(img_obj.image.path)
-            messages.success(request, "Product updated successfully.")
-            return redirect("admin_product_edit",product.id)
-        else:
-            messages.error(request, "Please fix form errors.")
+            messages.success(request, "Product updated.")
+            return redirect("admin_products")
+
+        messages.error(request, "Please fix the errors.")
+
     else:
         form = ProductForm(instance=product)
-        image_form = ProductImageForm()
 
-    context = {
+    images = ProductImage.objects.filter(product=product)
+
+    return render(request, "adminpanel/products/product_form.html", {
         "form": form,
-        "image_form": image_form,
         "product": product,
         "images": images,
-        "variants": variants,
-    }
-    return render(request, "adminpanel/products/product_form.html", context)
+    })
 
 def image_resize(image_path):
     img = Image.open(image_path)
@@ -266,7 +271,7 @@ def image_resize(image_path):
 def product_list(request):
     search = request.GET.get("search", "")
     products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)|
-                                      Q(category__name__icontains=search),active=True).order_by("-created_at")
+                                      Q(category__name__icontains=search),).order_by("-created_at")
     paginator = Paginator(products, 6)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)

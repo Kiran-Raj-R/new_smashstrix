@@ -1,88 +1,147 @@
 {% extends 'adminpanel/base_admin.html' %}
-{% block title %}Products | SmashStrix{% endblock %}
+{% block title %}Products{% endblock %}
 
 {% block content %}
 
-<div class="flex justify-between items-center mb-6">
-  <h2 class="text-2xl font-bold">Products</h2>
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">Products</h1>
 
-  <a href="{% url 'admin_product_add' %}"
-     class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition">
-     Add Product
-  </a>
+    <a href="{% url 'admin_product_add' %}"
+       class="bg-blue-700 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition">
+        + Add Product
+    </a>
 </div>
 
-<form method="GET" class="flex gap-2 mb-4">
-  <input type="text" name="search" value="{{ search }}"
-         placeholder="Search Product..." class="border p-2 rounded w-64">
-  <button class="bg-blue-700 text-white px-3 py-2 rounded">Search</button>
-  <a href="{% url 'admin_products' %}"
-     class="bg-gray-500 text-white px-3 py-2 rounded">Clear</a>
-</form>
+<div class="bg-white shadow-lg rounded-xl p-6 border border-gray-200">
 
-<table class="w-full bg-white shadow-md rounded">
-  <thead class="bg-gray-100">
-    <tr>
-      <th class="p-3 text-left">Image</th>
-      <th class="p-3 text-left">Name</th>
-      <th class="p-3 text-left">Brand</th>
-      <th class="p-3 text-left">Category</th>
-      <th class="p-3 text-left">Price</th>
-      <th class="p-3 text-left">Status</th>
-      <th class="p-3 text-left">Actions</th>
-    </tr>
-  </thead>
+    <table class="w-full border-collapse">
+        <thead>
+            <tr class="bg-gray-100 text-gray-700 font-semibold">
+                <th class="p-3 text-left">Image</th>
+                <th class="p-3 text-left">Product</th>
+                <th class="p-3 text-left">Brand</th>
+                <th class="p-3 text-left">Category</th>
+                <th class="p-3 text-left">Price</th>
+                <th class="p-3 text-left">Stock</th>
+                <th class="p-3 text-left">Status</th>
+                <th class="p-3 text-center">Actions</th>
+            </tr>
+        </thead>
 
-  <tbody>
-    {% for product in products %}
-    <tr class="border-b">
+        <tbody>
 
-      <td class="p-3">
-        {% if product.images.first %}
-          <img src="{{ product.images.first.image.url }}"
-               class="h-10 w-10 object-cover rounded">
+            {% for product in products %}
+            <tr class="border-b hover:bg-gray-50 transition">
+                <td class="p-3">
+                    {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}"
+                             class="h-16 w-16 object-cover rounded border shadow-sm">
+                    {% else %}
+                        <div class="h-16 w-16 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                            No Image
+                        </div>
+                    {% endif %}
+                </td>
+
+                <td class="p-3 font-medium text-gray-800">
+                    {{ product.name }}
+                </td>
+
+                <td class="p-3">{{ product.brand.name }}</td>
+                <td class="p-3">{{ product.category.name }}</td>
+
+                <td class="p-3">
+                    <span class="font-semibold text-green-700">₹ {{ product.price }}</span>
+                    {% if product.discount_price %}
+                        <br>
+                        <span class="text-sm text-gray-500">Discount: ₹ {{ product.discount_price }}</span>
+                    {% endif %}
+                </td>
+
+                <td class="p-3">
+                    {% if product.stock > 0 %}
+                        <span class="text-green-700 font-semibold">{{ product.stock }}</span>
+                    {% else %}
+                        <span class="text-red-600 font-semibold">Out of Stock</span>
+                    {% endif %}
+                </td>
+
+                <td class="p-3">
+                    {% if product.active %}
+                        <span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">Active</span>
+                    {% else %}
+                        <span class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">Inactive</span>
+                    {% endif %}
+                </td>
+
+                <td class="p-3 text-center space-x-2">
+                    <a href="{% url 'admin_product_edit' product.id %}"
+                       class="text-blue-700 hover:text-blue-900 font-semibold">Edit</a>
+
+                    <a href="{% url 'admin_color_variant_add' product.id %}"
+                       class="text-yellow-600 hover:text-yellow-700 font-semibold">Variants</a>
+
+                    <button onclick="confirmDelete('{% url 'admin_product_delete' product.id %}')"
+                            class="text-red-600 hover:text-red-800 font-semibold">Delete</button>
+                </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+                <td colspan="8" class="p-6 text-center text-gray-500">
+                    No products added yet.
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+</div>
+{% if products.has_other_pages %}
+<div class="flex justify-center mt-6 space-x-2">
+    {% if products.has_previous %}
+        <a href="?page={{ products.previous_page_number }}{% if search %}&search={{ search }}{% endif %}"
+           class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Prev</a>
+    {% else %}
+        <span class="px-4 py-2 bg-gray-100 rounded text-gray-400">Prev</span>
+    {% endif %}
+
+    {% for i in products.paginator.page_range %}
+        {% if products.number == i %}
+            <span class="px-4 py-2 bg-blue-700 text-white rounded">{{ i }}</span>
         {% else %}
-          —
+            <a href="?page={{ i }}{% if search %}&search={{ search }}{% endif %}"
+               class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">{{ i }}</a>
         {% endif %}
-      </td>
-
-      <td class="p-3">{{ product.name }}</td>
-      <td class="p-3">{{ product.brand.name }}</td>
-      <td class="p-3">{{ product.category.name }}</td>
-
-      <td class="p-3">
-        ₹{{ product.discount_price|default:product.price }}
-      </td>
-
-      <td class="p-3">
-        {% if product.active %}
-          <span class="text-green-600 font-semibold">Active</span>
-        {% else %}
-          <span class="text-red-600 font-semibold">Inactive</span>
-        {% endif %}
-      </td>
-
-      <td class="p-3 flex gap-4">
-        <a href="{% url 'admin_product_edit' product.id %}"
-           class="text-blue-600 hover:underline">Edit</a>
-
-        <a href="#" class="text-red-600 hover:underline"onclick="confirmDelete('{% url 'admin_product_delete' product.id %}')">Delete</a>
-      </td>
-    </tr>
     {% endfor %}
-  </tbody>
-</table>
 
-<div class="mt-4 flex items-center gap-4">
-  {% if products.has_previous %}
-    <a href="?page={{ products.previous_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Prev</a>
-  {% endif %}
+    {% if products.has_next %}
+        <a href="?page={{ products.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
+           class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Next</a>
+    {% else %}
+        <span class="px-4 py-2 bg-gray-100 rounded text-gray-400">Next</span>
+    {% endif %}
 
-  <span>Page {{ products.number }} of {{ products.paginator.num_pages }}</span>
-
-  {% if products.has_next %}
-    <a href="?page={{ products.next_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Next</a>
-  {% endif %}
 </div>
+{% endif %}
+
+<script>
+function confirmDelete(url) {
+    Swal.fire({
+        title: "Delete Product?",
+        text: "This action cannot be undone!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Delete",
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
+</script>
 
 {% endblock %}
