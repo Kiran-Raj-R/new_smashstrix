@@ -1,0 +1,110 @@
+{% load custom_filters %}
+
+<div class="bg-white shadow-md p-5 rounded-xl w-full md:w-64 space-y-6">
+
+    <form method="GET" class="space-y-6">
+        <div>
+            <label class="font-semibold">Search</label>
+            <input type="text" name="q"
+                   value="{{ request.GET.q }}"
+                   placeholder="Search products..."
+                   class="border p-2 w-full rounded">
+        </div>
+        <div>
+            <label class="font-semibold">Category</label>
+            <ul class="mt-2 space-y-1">
+                {% for cat in categories %}
+                <li>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox"
+                               name="category"
+                               value="{{ cat.id }}"
+                               {% if cat.id|stringformat:'s' in selected_categories %}checked{% endif %}>
+                        {{ cat.name }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div>
+            <label class="font-semibold">Brand</label>
+            <ul class="mt-2 space-y-1">
+                {% for b in brands %}
+                <li>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox"
+                               name="brand"
+                               value="{{ b.id }}"
+                               {% if b.id|stringformat:'s' in selected_brands %}checked{% endif %}>
+                        {{ b.name }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div>
+            <label class="font-semibold">Color</label>
+            <div class="mt-3 grid grid-cols-5 gap-3">
+                {% for c in colors %}
+                {% with hex=COLOR_MAP|get_item:c|default:"#ccc" %}
+
+                <label class="cursor-pointer text-center">
+                    <input type="checkbox"
+                           name="color"
+                           value="{{ c }}"
+                           class="hidden peer"
+                           {% if c in selected_colors %}checked{% endif %}>
+
+                    <div class="w-8 h-8 rounded-full border-2
+                                peer-checked:border-blue-600
+                                peer-checked:scale-110
+                                transition"style="background: {{ hex }}">
+                    </div>
+
+                    <p class="text-xs mt-1">{{ c|title }}</p>
+                </label>
+
+                {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <label class="font-semibold">Price Range</label>
+            <div class="flex gap-2">
+                <input type="number" name="min"
+                       placeholder="Min"
+                       value="{{ request.GET.min }}"
+                       class="border p-2 w-1/2 rounded">
+                <input type="number" name="max"
+                       placeholder="Max"
+                       value="{{ request.GET.max }}"
+                       class="border p-2 w-1/2 rounded">
+            </div>
+        </div>
+
+        <div>
+            <label class="font-semibold">Sort By</label>
+            <select name="sort" class="border p-2 w-full rounded">
+                <option value="">None</option>
+                <option value="low"  {% if request.GET.sort == 'low' %}selected{% endif %}>Price: Low → High</option>
+                <option value="high" {% if request.GET.sort == 'high' %}selected{% endif %}>Price: High → Low</option>
+                <option value="az" {% if request.GET.sort == 'az' %}selected{% endif %}>Name: A → Z</option>
+                <option value="za" {% if request.GET.sort == 'za' %}selected{% endif %}>Name: Z → A</option>
+            </select>
+        </div>
+
+        <button class="bg-blue-700 w-full text-white py-2 rounded hover:bg-blue-800">
+            Apply Filters
+        </button>
+
+        <a href="{% url 'shop' %}"
+           class="block text-center py-2 rounded bg-gray-300 hover:bg-gray-400">
+            Reset Filters
+        </a>
+
+    </form>
+
+</div>
