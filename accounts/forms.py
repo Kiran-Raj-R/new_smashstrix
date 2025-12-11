@@ -1,6 +1,6 @@
 from django import forms
 from .models import User
-from django.contrib.auth import authenticate
+import re
 
 class UserSignupForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder':'Password'}),label='Password')
@@ -15,6 +15,21 @@ class UserSignupForm(forms.ModelForm):
             'mobile' : forms.TextInput(attrs={'placeholder':'Mob. No'}),
             'email' : forms.EmailInput(attrs={'placeholder':'Email'}),
         }
+
+    def clean_first_name(self):
+        name = self.cleaned_data.get("first_name","")
+        cleaned = re.sub(r'[^A-Za-z]', '', name)
+        if not cleaned:
+            raise forms.ValidationError("Names should not contain only specical characters or numbers.")
+        return cleaned.capitalize()
+    
+    def clean_last_name(self):
+        name = self.cleaned_data.get("last_name","")
+        cleaned = re.sub(r'[^A-Za-z]', '', name)
+        if not cleaned:
+            raise forms.ValidationError("Names should not contain only specical characters or numbers.")
+        return cleaned.capitalize()
+    
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -53,13 +68,5 @@ class UserloginForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        email = cleaned_data.get('email')
-        password = cleaned_data.get('password')
-
-        if email and password:
-            user = authenticate(email=email,password=password)
-            if not user:
-                raise forms.ValidationError('Invalid email or password...')
-            cleaned_data['user'] = user
         return cleaned_data
     

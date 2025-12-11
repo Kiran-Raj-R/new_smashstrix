@@ -1,108 +1,75 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block title %}Verify OTP - SmashStrix{% endblock %}
+
 {% block content %}
-<style>
-  body {
-    background-color: #f9fafb;
-    font-family: 'Inter', 'Poppins', sans-serif;
-  }
+<div class="flex items-center justify-center min-h-[80vh] bg-gray-100 py-10">
+  <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
 
-  .otp-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-  }
+    <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">Verify OTP</h2>
 
-  .otp-card {
-    background: #fff;
-    padding: 2rem 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-  }
+    <p class="text-gray-600 text-center mb-6">
+      We have sent a 6-digit OTP to <br>
+      <strong class="text-gray-900">{{ user.email }}</strong>
+    </p>
 
-  .otp-card h2 {
-    color: #1e3a8a;
-    font-weight: 700;
-    margin-bottom: 1rem;
-  }
-
-  .otp-card input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    margin-top: 1rem;
-    font-size: 1.1rem;
-    text-align: center;
-    letter-spacing: 4px;
-  }
-
-  .otp-card button {
-    width: 100%;
-    background-color: #dc2626;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-top: 1rem;
-    transition: background 0.3s;
-  }
-
-  .otp-card button:hover {
-    background-color: #b91c1c;
-  }
-
-  .resend {
-    margin-top: 1rem;
-    color: #2563eb;
-  }
-
-  .resend a {
-    color: #2563eb;
-    text-decoration: none;
-  }
-
-  .resend a:hover {
-    text-decoration: underline;
-  }
-</style>
-
-<div class="otp-container">
-  <div class="otp-card">
-    <h2>Email Verification</h2>
-    <p>We sent a 6-digit OTP to <strong>{{ user.email }}</strong>.</p>
-
-    <form method="POST">
+    <form method="POST" class="space-y-4">
       {% csrf_token %}
-      <input type="text" name="otp" maxlength="6" placeholder="Enter OTP" required>
-      <button type="submit">Verify</button>
+
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Enter OTP</label>
+        <input
+          type="text"
+          name="otp"
+          maxlength="6"
+          required
+          class="w-full border border-gray-300 px-4 py-3 rounded-lg text-center tracking-widest text-xl font-semibold
+                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="______"
+        >
+      </div>
+
+      <p id="otp-timer" class="text-center text-gray-700 font-medium"></p>
+
+      <button
+        type="submit"
+        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+      >
+        Verify OTP
+      </button>
     </form>
 
-    <p class="resend">Didn’t get it? <a href="{% url 'resend_otp' %}">Resend OTP</a></p>
+    <div class="mt-4 text-center">
+      <a href="{% url 'resend_otp' %}" class="text-blue-600 hover:underline">
+        Didn't receive the OTP? Resend
+      </a>
+    </div>
+
   </div>
 </div>
-{% endblock %}
 
 <script>
-let timer = 300;
-let timerDisplay = document.createElement('p');
-document.querySelector('form').appendChild(timerDisplay);
+  let timer = 300;
+  const timerEl = document.getElementById("otp-timer");
 
-let countdown = setInterval(() => {
+  function updateTimer() {
     let minutes = Math.floor(timer / 60);
     let seconds = timer % 60;
-    timerDisplay.textContent = `OTP expires in ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    if (timer <= 0) {
-        clearInterval(countdown);
-        timerDisplay.textContent = "OTP expired. Please resend OTP.";
+
+    if (timerEl) {
+      timerEl.textContent =
+        `OTP expires in ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
+
+    if (timer <= 0) {
+      timerEl.textContent = "OTP expired. Request a new OTP.";
+      clearInterval(countdown);
+    }
+
     timer--;
-}, 1000);
+  }
+
+  updateTimer();
+  const countdown = setInterval(updateTimer, 1000);
 </script>
 
+{% endblock %}

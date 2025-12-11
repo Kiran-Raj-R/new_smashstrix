@@ -1,11 +1,11 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from django.contrib.auth import login,logout,get_user_model
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth import login,logout,get_user_model,authenticate
 from django.contrib.auth.decorators import login_required
 from . models import User
-from . utils import send_otp
+from . utils import send_otp, send_reset_password_otp
 from . forms import UserSignupForm,UserloginForm
+from django.contrib.auth.hashers import make_password
 
 User = get_user_model()
 
@@ -29,10 +29,18 @@ def user_login(request):
 
     form = UserloginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        user = form.cleaned_data.get('user')
-        if user and user.blocked:
+        email = form.cleaned_data.get('email')
+        password = form.cleaned_data.get('password')
+
+        user = authenticate(request,username=email,password=password)
+        if user is None:
+            messages.error(request, "Invalid email or password..")
+            return redirect('login')
+        
+        if user.blocked:
             messages.error(request, "Your account has been blocked.")
-            return redirect("user_login")
+            return redirect("login")
+        
         login(request,user)
         messages.success(request,'Welcome to Smashstrix.')
         return redirect('home')
@@ -51,10 +59,9 @@ def verify_otp(request):
             user.otp_verified = True
             user.otp = None
             user.save()
-            login(request,user,backend='django.contrib.auth.backends.ModelBackend')
-            messages.success(request,"Account verified Successfully. You can now login to Smashstrix.")
             del request.session['pending_user']
-            return redirect('home')
+            messages.success(request,"Account verified Successfully. You can now login to Smashstrix.")
+            return redirect('login')
         else:
             messages.error(request,"Invalid OTP or OTP expired..")
             return redirect('verify_otp')
@@ -83,7 +90,7 @@ def forgot_password(request):
         email = request.POST.get('email')
         try:
             user = User.objects.get(email=email)
-            send_otp(user)
+            send_reset_password_otp(user)
             request.session['reset_user'] = user.id
             messages.success(request,"An OTP has been sent to your registered mail")
             return redirect('forgot_password_otp')
@@ -101,7 +108,7 @@ def forgot_password_otp(request):
     if request.method == 'POST':
         entered_otp = request.POST.get('otp')
         if user.otp == entered_otp and not user.otp_expired():
-            messages.success = (request,"OTP verified! You can reset your password now.")
+            messages.success(request,"OTP verified! You can reset your password now.")
             return redirect('password_reset')
         else:
             messages.error(request,"Invalid or expired OTP")
@@ -113,7 +120,10 @@ def password_reset(request):
     if not user_id:
         return redirect('forgot_password')
     
-    user = User.objects.get(id=user_id)
+    user = User.objects.filter(id=user_id).first()
+    if not user:
+        messages.error(request,"User not found. Try again.")
+        return redirect('forgot_password')
     
     if request.method == 'POST':
         password = request.POST.get('password')
@@ -123,11 +133,12 @@ def password_reset(request):
             messages.error(request,"The passwords doesn't match..")
             return redirect('password_reset')
         
-        user.password = make_password(password)
+        user.set_password(password)
         user.otp = None
+        user.otp_verified = False
         user.save()
 
-        del request.session['reset_user']
+        request.session.pop("reset_user",None)
         messages.success(request,"Password reset successfully. You can now login.")
         return redirect('login')
 
