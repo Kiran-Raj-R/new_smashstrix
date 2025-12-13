@@ -22,6 +22,6 @@ class User(AbstractUser):
         if not self.otp_created:
             return True
         return timezone.now() > self.otp_created + timedelta(minutes=5)
-
+    
     def __str__(self):
         return f'{self.first_name} {self.last_name}'.strip()

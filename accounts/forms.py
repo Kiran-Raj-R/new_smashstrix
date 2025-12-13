@@ -1,6 +1,7 @@
 from django import forms
 from .models import User
 import re
+from django.contrib.auth import authenticate
 
 class UserSignupForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder':'Password'}),label='Password')
@@ -39,7 +40,7 @@ class UserSignupForm(forms.ModelForm):
     
     def clean_mobile(self):
         mob = self.cleaned_data.get('mobile')
-        if not mob.isdigit() or len(mob) not in (10,11,12):
+        if not mob or not mob.isdigit() or len(mob) not in (10,11,12):
             raise forms.ValidationError("Enter a valid mobile number")
         if User.objects.filter(mobile=mob).exists():
             raise forms.ValidationError("This mobile number is already registered.")
@@ -68,5 +69,19 @@ class UserloginForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        email = cleaned_data.get("email")
+        password = cleaned_data.get("password")
+
+        if email and password:
+            email = email.lower().strip()
+            user = authenticate(email=email, password=password)
+
+            if user is None:
+                raise forms.ValidationError("Invalid email or password.")
+            if user.blocked:
+                raise forms.ValidationError("Your account has been blocked by admin.")
+            if not user.is_active:
+                raise forms.ValidationError("Your account is inactive.")
+            cleaned_data["user"] = user
+
         return cleaned_data
-    

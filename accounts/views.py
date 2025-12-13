@@ -1,11 +1,10 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from django.contrib.auth import login,logout,get_user_model,authenticate
+from django.contrib.auth import login,logout,get_user_model
 from django.contrib.auth.decorators import login_required
 from . models import User
 from . utils import send_otp, send_reset_password_otp
-from . forms import UserSignupForm,UserloginForm
-from django.contrib.auth.hashers import make_password
+from . forms import UserSignupForm, UserloginForm
 
 User = get_user_model()
 
@@ -29,18 +28,7 @@ def user_login(request):
 
     form = UserloginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        email = form.cleaned_data.get('email')
-        password = form.cleaned_data.get('password')
-
-        user = authenticate(request,username=email,password=password)
-        if user is None:
-            messages.error(request, "Invalid email or password..")
-            return redirect('login')
-        
-        if user.blocked:
-            messages.error(request, "Your account has been blocked.")
-            return redirect("login")
-        
+        user = form.cleaned_data["user"]
         login(request,user)
         messages.success(request,'Welcome to Smashstrix.')
         return redirect('home')
@@ -120,26 +108,35 @@ def password_reset(request):
     if not user_id:
         return redirect('forgot_password')
     
-    user = User.objects.filter(id=user_id).first()
-    if not user:
-        messages.error(request,"User not found. Try again.")
-        return redirect('forgot_password')
+    user = User.objects.get(id=user_id)
     
     if request.method == 'POST':
-        password = request.POST.get('password')
-        cpassword = request.POST.get('cpassword')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
 
-        if password != cpassword:
+        if not password1 or not password2:
+            messages.error(request, "Password fields cannot be empty.")
+            return redirect('password_reset')
+        
+        if len(password1) < 8:
+            messages.error(request,"Password must contain at least 8 characters.")
+            return redirect('password_reset')
+
+        if password1 != password2:
             messages.error(request,"The passwords doesn't match..")
             return redirect('password_reset')
         
-        user.set_password(password)
+        user.set_password(password1)
         user.otp = None
+        user.otp_created = None
         user.otp_verified = False
-        user.save()
 
-        request.session.pop("reset_user",None)
-        messages.success(request,"Password reset successfully. You can now login.")
+        user.save(update_fields=[
+            'password', 'otp', 'otp_created', 'otp_verified'
+        ])
+
+        request.session.pop('reset_user', None)
+        messages.success(request,"Password reset successfully.")
         return redirect('login')
 
     return render(request,'accounts/password_reset.html')
