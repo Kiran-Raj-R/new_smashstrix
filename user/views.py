@@ -1,12 +1,11 @@
 from django.shortcuts import render, get_object_or_404
-from products.models import Product, Brand, Category, ColorVariant
 from django.core.paginator import Paginator
-from .color_map import COLOR_MAP
 from django.db.models import Q
-from urllib.parse import urlencode
+from products.models import Product, Brand, Category, ColorVariant
+from .color_map import COLOR_MAP
 
 def home(request):
-    return render(request,'user/home.html')
+    return render(request, "user/home.html")
 
 def shop(request):
 
@@ -52,7 +51,7 @@ def shop(request):
     else:
         products = products.order_by("-created_at")
 
-    paginator = Paginator(products, 12)
+    paginator = Paginator(products, 6)
     page = request.GET.get("page")
     products = paginator.get_page(page)
 
@@ -78,15 +77,14 @@ def shop(request):
 
     return render(request, "user/shop.html", context)
 
+
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id, active=True)
 
-    related_products = Product.objects.filter(
-        category=product.category,
-        active=True
-    ).exclude(id=product_id)[:4]
+    related_products = Product.objects.filter(category=product.category, active=True).exclude(id=product.id)[:4]
 
-    return render(request, "user/product_detail.html", {
-        "product": product,
-        "related_products": related_products
-    })
+    return render(request,"user/product_detail.html",{
+            "product": product,
+            "related_products": related_products,
+        },
+    )
