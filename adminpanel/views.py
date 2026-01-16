@@ -7,7 +7,9 @@ from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
-from PIL import Image   
+from PIL import Image
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -25,10 +27,14 @@ def admin_login(request):
             messages.error(request,"Invalid credentials or no admin access.")
     return render(request,'adminpanel/admin_login.html') 
 
+@never_cache
 def admin_logout(request):
     logout(request)
+    request.session.flush()
     return redirect('admin_login')
 
+@never_cache
+@login_required(login_url='admin_login')
 def admin_dashboard(request):
     context = {
         "total_users": User.objects.count(),
