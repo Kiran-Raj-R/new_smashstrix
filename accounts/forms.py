@@ -27,10 +27,9 @@ class UserSignupForm(forms.ModelForm):
     
     def clean_last_name(self):
         name = self.cleaned_data.get("last_name","").strip()
-        cleaned = re.fullmatch(r"[A-Za-z]+", name)
-        if not cleaned:
+        if not re.fullmatch(r"[A-Za-z]+", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
-        return cleaned.capitalize()
+        return name.capitalize()
     
 
     def clean_email(self):
@@ -40,8 +39,8 @@ class UserSignupForm(forms.ModelForm):
         return email
     
     def clean_mobile(self):
-        mob = self.cleaned_data.get('mobile').strip()
-        if not re.fullmatch(r"/d{10}",mob):
+        mob = self.cleaned_data.get('mobile',"").strip()
+        if not re.fullmatch(r"\d{10}",mob):
             raise forms.ValidationError("Mobile number must contain exactly 10 numbers.")
         if len(set(mob))==1:
             raise forms.ValidationError("Enter a valid mobile number")
