@@ -2,6 +2,7 @@ from django.shortcuts import render,redirect
 from django.contrib import messages
 from django.contrib.auth import login,logout,get_user_model
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from . models import User
 from . utils import send_otp, send_reset_password_otp
 from . forms import UserSignupForm, UserloginForm
@@ -40,6 +41,10 @@ def verify_otp(request):
         return redirect('signup')
     user = User.objects.get(id=user_id)
 
+    if user.otp_created:
+        expiry_time = user.otp_created + timezone.timedelta(minutes=5)
+        remaining_seconds = max(int((expiry_time - timezone.now()).total_seconds()), 0)
+
     if request.method == 'POST':
         entered_otp = request.POST.get('otp')
         if user.otp == entered_otp and not user.otp_expired():
@@ -53,7 +58,7 @@ def verify_otp(request):
         else:
             messages.error(request,"Invalid OTP or OTP expired..")
             return redirect('verify_otp')
-    return render(request,'accounts/otp_verify.html',{'user':user})
+    return render(request,'accounts/otp_verify.html',{'user':user, 'remaining_seconds':remaining_seconds})
 
 def resend_otp(request):
     user_id = request.session.get('pending_user')
