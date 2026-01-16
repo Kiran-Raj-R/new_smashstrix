@@ -10,20 +10,20 @@ class AccessControlMiddleware:
     def __call__(self, request):
         user = request.user
         path = request.path
-        response = self.get_response(request)
-
+        
         if user.is_authenticated:
-            add_never_cache_headers(response)
             if hasattr(user, "blocked") and user.blocked:
                 logout(request)
+                request.session.flush()
                 messages.error(request, "Your account has been blocked.")
                 return redirect("login")
 
             if path.startswith("/adminpanel") and not user.is_staff:
                 messages.error(request, "Unauthorized admin access.")
                 return redirect("login")
-
-            if not path.startswith("/adminpanel") and user.is_staff:
-                pass
+        
+        response = self.get_response(request)
+        if user.is_authenticated:
+            add_never_cache_headers(response)
 
         return response
