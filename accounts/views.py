@@ -70,6 +70,7 @@ def user_profile(request):
 
 def user_logout(request):
     logout(request)
+    request.session.flush()
     messages.success(request,"You have logged out successfully.")
     return redirect('home')
 

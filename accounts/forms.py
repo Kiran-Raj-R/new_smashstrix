@@ -18,15 +18,16 @@ class UserSignupForm(forms.ModelForm):
         }
 
     def clean_first_name(self):
-        name = self.cleaned_data.get("first_name","")
-        cleaned = re.sub(r'[^A-Za-z]', '', name)
-        if not cleaned:
+        name = self.cleaned_data.get("first_name","").strip()
+        if len(name) < 3:
+            raise forms.ValidationError("First name must be atleast 3 characters long.")
+        if not re.fullmatch(r"[A-Za-z]+", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
-        return cleaned.capitalize()
+        return name.capitalize()
     
     def clean_last_name(self):
-        name = self.cleaned_data.get("last_name","")
-        cleaned = re.sub(r'[^A-Za-z]', '', name)
+        name = self.cleaned_data.get("last_name","").strip()
+        cleaned = re.fullmatch(r"[A-Za-z]+", name)
         if not cleaned:
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return cleaned.capitalize()
@@ -39,9 +40,10 @@ class UserSignupForm(forms.ModelForm):
         return email
     
     def clean_mobile(self):
-        mob = self.cleaned_data.get('mobile')
-        if not mob or not mob.isdigit() or len(mob) not in (10,11,12):
-            raise forms.ValidationError("Enter a valid mobile number")
+        mob = self.cleaned_data.get('mobile').strip()
+        if not re.fullmatch(r"/d{10}",mob):
+            raise forms.ValidationError("Mobile number must contain exactly 10 numbers.")
+        
         if User.objects.filter(mobile=mob).exists():
             raise forms.ValidationError("This mobile number is already registered.")
         return mob
@@ -52,7 +54,7 @@ class UserSignupForm(forms.ModelForm):
         password2 = cleaned_data.get("password2")
         if password1 and len(password1) < 8:
             self.add_error('password1',"The password should have atleast 8 characters.")
-        elif password1 and password2 and password1 != password2:
+        if password1 and password2 and password1 != password2:
             self.add_error('password2',"Passwords doesnot match.")
         return cleaned_data
     
