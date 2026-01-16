@@ -43,7 +43,10 @@ class UserSignupForm(forms.ModelForm):
         mob = self.cleaned_data.get('mobile').strip()
         if not re.fullmatch(r"/d{10}",mob):
             raise forms.ValidationError("Mobile number must contain exactly 10 numbers.")
-        
+        if len(set(mob))==1:
+            raise forms.ValidationError("Enter a valid mobile number")
+        if mob[0] not in "6789":
+            raise forms.ValidationError("Enter a valid Indian number.")
         if User.objects.filter(mobile=mob).exists():
             raise forms.ValidationError("This mobile number is already registered.")
         return mob
