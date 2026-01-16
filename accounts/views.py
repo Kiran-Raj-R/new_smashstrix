@@ -41,6 +41,7 @@ def verify_otp(request):
         return redirect('signup')
     user = User.objects.get(id=user_id)
 
+    remaining_seconds = 0
     if user.otp_created:
         expiry_time = user.otp_created + timezone.timedelta(minutes=5)
         remaining_seconds = max(int((expiry_time - timezone.now()).total_seconds()), 0)
@@ -99,6 +100,11 @@ def forgot_password_otp(request):
     
     user = User.objects.get(id=user_id)
 
+    remaining_seconds = 0
+    if user.otp_created:
+        expiry_time = user.otp_created + timezone.timedelta(minutes=5)
+        remaining_seconds = max(int((expiry_time - timezone.now()).total_seconds()), 0)
+
     if request.method == 'POST':
         entered_otp = request.POST.get('otp')
         if user.otp == entered_otp and not user.otp_expired():
@@ -107,7 +113,7 @@ def forgot_password_otp(request):
         else:
             messages.error(request,"Invalid or expired OTP")
             return redirect('forgot_password_otp')
-    return render(request,'accounts/forgot_password_otp.html',{'user':user})
+    return render(request,'accounts/forgot_password_otp.html',{'user':user, 'remaining_seconds': remaining_seconds})
 
 def password_reset(request):
     user_id = request.session.get('reset_user')
