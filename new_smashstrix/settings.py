@@ -68,7 +68,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     "allauth.account.middleware.AccountMiddleware",
-    "adminpanel.middleware.AdminAccessMiddleware",
+    "core.middleware.AccessControlMiddleware",
 ]
 
 ROOT_URLCONF = 'new_smashstrix.urls'
@@ -192,3 +192,9 @@ SOCIALACCOUNT_PROVIDERS ={
 }
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 60*60*1
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
