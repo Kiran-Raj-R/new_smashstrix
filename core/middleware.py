@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.utils.cache import add_never_cache_headers
@@ -16,7 +17,7 @@ class AccessControlMiddleware:
                 logout(request)
                 request.session.flush()
                 messages.error(request, "Your account has been blocked.")
-                raise PermissionDenied
+                return redirect("login")
 
             if path.startswith("/adminpanel") and not user.is_staff:
                 messages.error(request, "Unauthorized admin access.")
