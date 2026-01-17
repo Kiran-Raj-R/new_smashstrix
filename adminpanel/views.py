@@ -46,6 +46,8 @@ def admin_dashboard(request):
     }
     return render(request,'adminpanel/dashboard.html',context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def admin_user_list(request):
     search = request.GET.get("search", "")
 
@@ -70,6 +72,8 @@ def unblock_user(request, user_id):
     messages.success(request, f"{user.first_name} has been unblocked.")
     return redirect('admin_users')
 
+@never_cache
+@login_required(login_url='admin_login')
 def brand_list(request):
     search = request.GET.get('search','')
     brands = Brand.objects.filter(name__icontains=search).order_by('-created_at')
@@ -117,6 +121,8 @@ def brand_delete(request,pk):
     messages.success(request,"Brand deleted Successfully.")
     return redirect('admin_brands')
 
+@never_cache
+@login_required(login_url='admin_login')
 def category_list(request):
     search = request.GET.get('search',"")
     categories = Category.objects.filter(name__icontains=search).order_by('-created_at')
@@ -274,6 +280,8 @@ def image_resize(image_path):
     img = img.resize((800, 800))
     img.save(image_path)
 
+@never_cache
+@login_required(login_url='admin_login')
 def product_list(request):
     search = request.GET.get("search", "")
     products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)|
