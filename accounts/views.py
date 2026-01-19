@@ -23,18 +23,6 @@ def user_signup(request):
         return redirect('verify_otp')
     return render(request,'accounts/signup.html',{'form':form})
 
-def user_login(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-
-    form = UserloginForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.cleaned_data["user"]
-        login(request,user)
-        messages.success(request,'Welcome to Smashstrix.')
-        return redirect('home')
-    return render(request,'accounts/login.html',{'form':form})
-
 def verify_otp(request):
     user_id = request.session.get('pending_user')
     if not user_id:
@@ -70,15 +58,21 @@ def resend_otp(request):
     messages.success(request,"A new otp has been sent to your email...")
     return redirect('verify_otp')
 
+def user_login(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    form = UserloginForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.cleaned_data["user"]
+        login(request,user)
+        messages.success(request,'Welcome to Smashstrix.')
+        return redirect('home')
+    return render(request,'accounts/login.html',{'form':form})
+
 @login_required
 def user_profile(request):
     return render(request,'accounts/profile.html')
-
-def user_logout(request):
-    logout(request)
-    request.session.flush()
-    messages.success(request,"You have logged out successfully.")
-    return redirect('home')
 
 def forgot_password(request):
     if request.method == 'POST':
@@ -152,3 +146,9 @@ def password_reset(request):
         return redirect('login')
 
     return render(request,'accounts/password_reset.html')
+
+def user_logout(request):
+    logout(request)
+    request.session.flush()
+    messages.success(request,"You have logged out successfully.")
+    return redirect('home')
