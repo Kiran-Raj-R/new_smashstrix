@@ -123,3 +123,9 @@ def address_add(request,pk):
         return redirect("address_list")
     return render(request,"user/address_form.html",{'form':form})
 
+@login_required
+def address_delete(request,pk):
+    address = get_object_or_404(Address,pk=pk,user=request.user)
+    address.delete()
+    return redirect("address_list")
+
