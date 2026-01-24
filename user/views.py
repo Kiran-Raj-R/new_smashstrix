@@ -1,8 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render,redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Q
 from products.models import Product, Brand, Category, ColorVariant
 from .color_map import COLOR_MAP
+from django.contrib.auth.decorators import login_required
+from .models import Address
+from .forms import AddressForm
 
 def home(request):
     return render(request, "user/home.html")
@@ -88,3 +91,23 @@ def product_detail(request, product_id):
             "related_products": related_products,
         },
     )
+
+@login_required
+def address_list(request):
+    addresses = Address.objects.filter(user=request.user)
+    return render(request,"user/address_list.html",{'addresses':addresses})
+
+@login_required
+def address_add(request):
+    initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": {request.user.mobile}}
+    form = AddressForm(request.POST or None, initial=initial_data)
+    if request.method == 'POST' and form.is_valid():
+        address = form.save(commit=False)
+        address.user = request.user
+
+        if address.is_default:
+            Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+            address.save()
+        return redirect("address_list")
+    return render(request,"user/address_form.html",{'form':form})
+
