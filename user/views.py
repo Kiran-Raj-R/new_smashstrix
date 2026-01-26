@@ -112,7 +112,7 @@ def address_add(request):
     return render(request,"user/address_form.html",{'form':form})
 
 @login_required
-def address_add(request,pk):
+def address_edit(request,pk):
     address = get_object_or_404(Address, pk=pk, user = request.user)
     form = AddressForm(request.POST or None, instance=address)
     if request.method == 'POST' and form.is_valid():

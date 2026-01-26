@@ -5,7 +5,16 @@ import re
 class AddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        fields = {"full_name","phone","house_name","street","city","state","pincode","is_default"}
+        fields = {"full_name","phone","address_line","city","state","pincode","country","is_default"}
+
+    widgets = {"full_name": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder": "Full Name"}),
+            "phone": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder": "Mobile Number"}),
+            "address_line": forms.Textarea(attrs={"class": "w-full border p-2 rounded","rows": 3,"placeholder": "House no, Street, Landmark"}),
+            "city": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
+            "state": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
+            "pincode": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
+            "country": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
+        }
 
     def clean_full_name(self):
         name = self.cleaned_data("full_name").strip()
