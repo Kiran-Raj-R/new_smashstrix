@@ -179,3 +179,23 @@ def edit_profile(request):
 
     return render(request, "user/profile/edit_profile.html", {"form": form})
 
+@login_required
+def verify_email_change(request):
+    user = request.user
+
+    if request.method == "POST":
+        otp = request.POST.get("otp")
+        if user.otp == otp and not user.otp_expired():
+            user.email = user.pending_email
+            user.pending_email = None
+            user.otp = None
+            user.otp_created = None
+            user.otp_verified = True
+            user.save()
+
+            messages.success(request, "Email updated successfully.")
+            return redirect("profile")
+
+        messages.error(request, "Invalid or expired OTP.")
+
+    return render(request, "user/profile/verify_email.html")
