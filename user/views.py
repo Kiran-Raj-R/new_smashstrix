@@ -92,6 +92,13 @@ def product_detail(request, product_id):
         },
     )
 
+@login_required(login_url="login")
+def user_profile(request):
+    default_address = (
+        Address.objects.filter(user=request.user, is_default=True).first())
+    return render(request, "user/profile/profile.html", {"default_address": default_address})
+
+
 @login_required
 def address_list(request):
     addresses = Address.objects.filter(user=request.user)
@@ -99,33 +106,49 @@ def address_list(request):
 
 @login_required
 def address_add(request):
-    initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": {request.user.mobile}}
+    initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": {request.user.mobile}, "country":"India"}
     form = AddressForm(request.POST or None, initial=initial_data)
     if request.method == 'POST' and form.is_valid():
         address = form.save(commit=False)
         address.user = request.user
 
-        if address.is_default:
+        if not Address.objects.filter(user=request.user).exists():
+            address.is_default = True
+        elif address.is_default:
             Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
             address.save()
         return redirect("address_list")
-    return render(request,"user/address_form.html",{'form':form})
+    return render(request,"user/address_form.html",{'form':form, 'mode':'add'})
 
 @login_required
 def address_edit(request,pk):
     address = get_object_or_404(Address, pk=pk, user = request.user)
     form = AddressForm(request.POST or None, instance=address)
     if request.method == 'POST' and form.is_valid():
-        address = form.save(commit=False)
-        if address.is_default:
+        updated_address = form.save(commit=False)
+        if updated_address.is_default:
             Address.objects.filter(user=request.user,is_default=True).exclude(pk=pk).update(is_default=False)
-            address.save()
+            updated_address.save()
         return redirect("address_list")
-    return render(request,"user/address_form.html",{'form':form})
+    return render(request,"user/address_form.html",{'form':form,'mode':'edit'})
 
 @login_required
 def address_delete(request,pk):
     address = get_object_or_404(Address,pk=pk,user=request.user)
-    address.delete()
+    if request.method == 'POST':
+        is_default = address.is_default
+        address.delete()
+        if is_default:
+            new_default = Address.objects.filter(User=request.user).first()
+            if new_default:
+                new_default.is_default=True
+                new_default.save()
     return redirect("address_list")
 
+@login_required
+def address_set_default(request, pk):
+    address = get_object_or_404(Address, pk=pk, user=request.user)
+    Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
+    address.is_default = True
+    address.save()
+    return redirect("address_list")

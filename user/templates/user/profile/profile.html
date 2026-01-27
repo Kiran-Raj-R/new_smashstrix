@@ -1,0 +1,35 @@
+{% extends "user/profile/base.html" %}
+{% load static %}
+
+{% block dashboard_content %}
+<div class="bg-white rounded-xl shadow p-6">
+
+  <div class="flex items-center gap-6 mb-6">
+    <img
+      src="{% if user.profile_image %}{{ user.profile_image.url }}{% else %}{% static 'user/images/default-avatar.webp' %}{% endif %}"
+      class="w-24 h-24 rounded-full object-cover border"
+    >
+
+    <div>
+      <h2 class="text-2xl font-semibold">{{ user.get_full_name }}</h2>
+      <p class="text-gray-600">{{ user.email }}</p>
+      <p class="text-sm text-gray-500 mt-1">
+        Joined on {{ user.date_joined|date:"F d, Y" }}
+      </p>
+    </div>
+  </div>
+
+  {% if default_address %}
+    <div class="border rounded-lg p-4 bg-gray-50">
+      <h3 class="font-semibold mb-2">Default Address</h3>
+      <p class="text-sm text-gray-700">
+        {{ default_address.address_line1 }}, {{ default_address.city }},
+        {{ default_address.state }} - {{ default_address.pincode }}
+      </p>
+    </div>
+  {% else %}
+    <p class="text-gray-500 text-sm">No default address added.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

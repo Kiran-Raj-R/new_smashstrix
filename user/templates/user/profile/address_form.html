@@ -1,0 +1,39 @@
+{% extends "user/profile/base.html" %}
+
+{% block dashboard_content %}
+<div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+
+  <h2 class="text-xl font-semibold mb-6">
+    {% if form.instance.pk %}Edit Address{% else %}Add Address{% endif %}
+  </h2>
+
+  <form method="POST" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {{ form.full_name }}
+      {{ form.phone }}
+    </div>
+
+    {{ form.address_line1 }}
+    {{ form.city }}
+    {{ form.state }}
+    {{ form.pincode }}
+
+    <div class="flex items-center gap-2">
+      {{ form.is_default }}
+      <label class="text-sm">Set as default address</label>
+    </div>
+
+    <div class="flex gap-4 mt-6">
+      <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+        Save
+      </button>
+      <a href="{% url 'address_list' %}" class="px-6 py-2 border rounded-lg">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="grid grid-cols-12 gap-6">
+
+    <aside class="col-span-12 md:col-span-3 bg-white rounded-xl shadow p-5">
+      <ul class="space-y-4 text-sm font-medium">
+        <li><a href="{% url 'profile' %}" class="block hover:text-blue-600">Profile</a></li>
+        <li><a href="{% url 'address_list' %}" class="block hover:text-blue-600">Addresses</a></li>
+        <li><a href="{% url 'user_orders' %}" class="block hover:text-blue-600">Orders</a></li>
+        <li><a href="{% url 'edit_profile' %}" class="block hover:text-blue-600">Edit Profile</a></li>
+        <li><a href="{% url 'change_password' %}" class="block hover:text-blue-600">Change Password</a></li>
+        <li><a href="{% url 'logout' %}" class="block text-red-600">Logout</a></li>
+      </ul>
+    </aside>
+
+    <main class="col-span-12 md:col-span-9">
+      {% block dashboard_content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+{% endblock %}
