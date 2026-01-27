@@ -114,7 +114,6 @@ def category_list(request):
     paginator = Paginator(categories,5)
     page_num = request.GET.get('page')
     page_obj = paginator.get_page(page_num)
-
     context = {
         'categories':page_obj,
         'search':search
@@ -245,7 +244,6 @@ def product_delete(request, pk):
     product = Product.objects.get(id=pk)
     product.active = False
     product.save()
-
     messages.success(request, "Product removed successfully.")
     return redirect("admin_products")
 
