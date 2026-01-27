@@ -87,3 +87,18 @@ class EditProfileForm(forms.ModelForm):
         if User.objects.filter(mobile=mob).exists():
             raise forms.ValidationError("This mobile number is already registered.")
         return mob
+    
+class ChangePasswordForm(forms.Form):
+    old_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "Current Password"}),label="Current Password")
+    new_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "New Password"}),label="New Password")
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "Confirm New Password"}),label="Confirm New Password")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new = cleaned_data.get("new_password")
+        confirm = cleaned_data.get("confirm_password")
+        if new and len(new) < 8:
+            raise forms.ValidationError("New password must be at least 8 characters.")
+        if new != confirm:
+            raise forms.ValidationError("Passwords do not match.")
+        return cleaned_data
