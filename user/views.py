@@ -155,3 +155,27 @@ def address_set_default(request, pk):
     address.save()
     return redirect("address_list")
 
+@login_required
+def edit_profile(request):
+    user = request.user
+    old_email = user.email
+
+    form = EditProfileForm(request.POST or None, instance=user)
+
+    if request.method == "POST" and form.is_valid():
+        new_email = form.cleaned_data["email"]
+        user.first_name = form.cleaned_data["first_name"]
+        user.last_name = form.cleaned_data["last_name"]
+        user.mobile = form.cleaned_data["mobile"]
+
+        if new_email != old_email:
+            send_email_change_otp(user, new_email)
+            messages.info(request, "OTP sent to your new email for verification.")
+            return redirect("verify_email_change")
+
+        user.save()
+        messages.success(request, "Profile updated successfully.")
+        return redirect("profile")
+
+    return render(request, "user/profile/edit_profile.html", {"form": form})
+
