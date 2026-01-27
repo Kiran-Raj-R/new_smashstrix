@@ -31,3 +31,19 @@ def send_reset_password_otp(user):
     )
 
     send_mail(subject,message,"SmashStrix <no-reply@smashstrix.com>",[user.email],fail_silently=False)
+
+def send_email_change_otp(user, new_email):
+    otp = str(random.randint(100000, 999999))
+    user.pending_email = new_email
+    user.otp = otp
+    user.otp_created = timezone.now()
+    user.otp_verified = False
+    user.save()
+
+    send_mail(
+        subject="Verify your new email - SmashStrix",
+        message=f"Hello {user.first_name}, \n\n Your OTP for email verification is {otp}. It expires in 5 minutes.",
+        from_email="SmashStrix <no-reply@smashstrix.com>",
+        recipient_list=[new_email],
+        fail_silently=False,
+    )
