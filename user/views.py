@@ -1,11 +1,13 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Q
 from products.models import Product, Brand, Category, ColorVariant
 from .color_map import COLOR_MAP
 from django.contrib.auth.decorators import login_required
 from .models import Address
-from .forms import AddressForm
+from .forms import AddressForm, EditProfileForm
+from django.contrib import messages
+from accounts.utils import send_email_change_otp
+
 
 def home(request):
     return render(request, "user/home.html")
@@ -152,3 +154,4 @@ def address_set_default(request, pk):
     address.is_default = True
     address.save()
     return redirect("address_list")
+

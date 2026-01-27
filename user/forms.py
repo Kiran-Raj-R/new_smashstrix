@@ -1,5 +1,6 @@
 from django import forms
 from .models import Address
+from accounts.models import User
 import re
 
 class AddressForm(forms.ModelForm):
@@ -40,3 +41,49 @@ class AddressForm(forms.ModelForm):
         if re.match(r"^\d{6}$",pincode):
             raise forms.ValidationError("Enter a valid 6-digit pincode.")
         return pincode
+
+class EditProfileForm(forms.ModelForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "mobile"]
+        widgets = {
+            'first_name' : forms.TextInput(attrs={'placeholder':'First name'}),
+            'last_name' : forms.TextInput(attrs={'placeholder':'Last Name'}),
+            'mobile' : forms.TextInput(attrs={'placeholder':'Mob. No'}),
+            'email' : forms.EmailInput(attrs={'placeholder':'Email'}),
+        }
+
+    def clean_first_name(self):
+        name = self.cleaned_data.get("first_name","").strip()
+        if len(name) < 3:
+            raise forms.ValidationError("First name must be atleast 3 characters long.")
+        if not re.fullmatch(r"[A-Za-z]+", name):
+            raise forms.ValidationError("Names should not contain only specical characters or numbers.")
+        return name.capitalize()
+    
+    def clean_last_name(self):
+        name = self.cleaned_data.get("last_name","").strip()
+        if not re.fullmatch(r"[A-Za-z]+", name):
+            raise forms.ValidationError("Names should not contain only specical characters or numbers.")
+        return name.capitalize()
+    
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email id is already registered.")
+        return email
+    
+    def clean_mobile(self):
+        mob = self.cleaned_data.get('mobile',"").strip()
+        if not re.fullmatch(r"\d{10}",mob):
+            raise forms.ValidationError("Mobile number must contain exactly 10 numbers.")
+        if len(set(mob))==1:
+            raise forms.ValidationError("Enter a valid mobile number")
+        if mob[0] not in "6789":
+            raise forms.ValidationError("Enter a valid Indian number.")
+        if User.objects.filter(mobile=mob).exists():
+            raise forms.ValidationError("This mobile number is already registered.")
+        return mob
