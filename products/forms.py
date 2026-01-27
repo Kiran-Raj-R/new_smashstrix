@@ -1,7 +1,6 @@
 from django import forms
 from products.models import Brand,Category,Product,ColorVariant
 from django.core.exceptions import ValidationError
-from .widgets import MultiFileInput
 
 ALLOWED_EXTENSIONS = ["jpg","jpeg","webp","png"]
 ALLOWED_CONTENT_TYPES = ["image/jpeg","image/webp","image/png","image/PNG"]
@@ -11,8 +10,7 @@ def validate_image(file):
     if ext not in ALLOWED_EXTENSIONS:
         raise ValidationError("Only jpg,jpeg,png and webp images are allowed.")
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise ValidationError("Invalid file format.")
-    
+        raise ValidationError("Invalid file format.")   
     return file
 
 class BrandForm(forms.ModelForm):
@@ -67,11 +65,11 @@ class ColorVariantForm(forms.ModelForm):
     class Meta:
         model = ColorVariant
         fields = ["color", "stock"]
-
         widgets = {
             "color": forms.Select(attrs={"class": "w-full border p-2 rounded"}),
             "stock": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min":0}),
         }
+
     def clean_stock(self):
         stock = self.cleaned_data.get("stock")
         if stock is not None and stock < 0:
