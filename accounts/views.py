@@ -70,10 +70,6 @@ def user_login(request):
         return redirect('home')
     return render(request,'accounts/login.html',{'form':form})
 
-@login_required
-def user_profile(request):
-    return render(request,'accounts/profile.html')
-
 def forgot_password(request):
     if request.method == 'POST':
         email = request.POST.get('email')
