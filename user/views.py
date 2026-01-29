@@ -89,14 +89,14 @@ def user_profile(request):
         Address.objects.filter(user=request.user, is_default=True).first())
     return render(request, "user/profile/profile.html", {"default_address": default_address})
 
-@login_required
+@login_required(login_url="login")
 def address_list(request):
     addresses = Address.objects.filter(user=request.user)
-    return render(request,"user/address_list.html",{'addresses':addresses})
+    return render(request,"user/profile/address_list.html",{'addresses':addresses})
 
-@login_required
+@login_required(login_url="login")
 def address_add(request):
-    initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": {request.user.mobile}, "country":"India"}
+    initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": request.user.mobile}
     form = AddressForm(request.POST or None, initial=initial_data)
     if request.method == 'POST' and form.is_valid():
         address = form.save(commit=False)
@@ -105,11 +105,12 @@ def address_add(request):
             address.is_default = True
         elif address.is_default:
             Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
-            address.save()
+        address.save()
+        messages.success(request,"Address added successfully.")
         return redirect("address_list")
-    return render(request,"user/address_form.html",{'form':form, 'mode':'add'})
+    return render(request,"user/profile/address_form.html",{'form':form, 'mode':'add'})
 
-@login_required
+@login_required(login_url="login")
 def address_edit(request,pk):
     address = get_object_or_404(Address, pk=pk, user = request.user)
     form = AddressForm(request.POST or None, instance=address)
@@ -119,22 +120,21 @@ def address_edit(request,pk):
             Address.objects.filter(user=request.user,is_default=True).exclude(pk=pk).update(is_default=False)
             updated_address.save()
         return redirect("address_list")
-    return render(request,"user/address_form.html",{'form':form,'mode':'edit'})
+    return render(request,"user/profile/address_form.html",{'form':form,'mode':'edit'})
 
-@login_required
+@login_required(login_url="login")
 def address_delete(request,pk):
     address = get_object_or_404(Address,pk=pk,user=request.user)
-    if request.method == 'POST':
-        is_default = address.is_default
-        address.delete()
-        if is_default:
-            new_default = Address.objects.filter(User=request.user).first()
-            if new_default:
-                new_default.is_default=True
-                new_default.save()
+    is_default = address.is_default
+    address.delete()
+    if is_default:
+        new_default = Address.objects.filter(user=request.user).first()
+        if new_default:
+            new_default.is_default=True
+            new_default.save()
     return redirect("address_list")
 
-@login_required
+@login_required(login_url="login")
 def address_set_default(request, pk):
     address = get_object_or_404(Address, pk=pk, user=request.user)
     Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
@@ -142,7 +142,7 @@ def address_set_default(request, pk):
     address.save()
     return redirect("address_list")
 
-@login_required
+@login_required(login_url="login")
 def edit_profile(request):
     user = request.user
     old_email = user.email
@@ -162,7 +162,7 @@ def edit_profile(request):
         return redirect("profile")
     return render(request, "user/profile/edit_profile.html", {"form": form})
 
-@login_required
+@login_required(login_url="login")
 def verify_email_change(request):
     user = request.user
     if request.method == "POST":
@@ -179,7 +179,7 @@ def verify_email_change(request):
         messages.error(request, "Invalid or expired OTP.")
     return render(request, "user/profile/verify_email.html")
 
-@login_required
+@login_required(login_url="login")
 def change_password(request):
     form = ChangePasswordForm(request.POST or None)
 

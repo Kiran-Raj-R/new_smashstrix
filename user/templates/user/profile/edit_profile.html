@@ -1,0 +1,71 @@
+{% extends "user/profile/base.html" %}
+{% load static %}
+
+{% block dashboard_content %}
+<div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+
+  <h2 class="text-xl font-semibold mb-6 border-b pb-3">Edit Profile</h2>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <p class="text-red-600 text-sm">{{ form.non_field_errors }}</p>
+    {% endif %}
+
+    <div>
+      <label class="block text-sm font-medium mb-1">First Name</label>
+      {{ form.first_name }}
+      {% if form.first_name.errors %}
+        <p class="text-red-500 text-sm">{{ form.first_name.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Last Name</label>
+      {{ form.last_name }}
+      {% if form.last_name.errors %}
+        <p class="text-red-500 text-sm">{{ form.last_name.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Email</label>
+      {{ form.email }}
+      <p class="text-xs text-gray-500 mt-1">
+        Changing email requires OTP verification
+      </p>
+      {% if form.email.errors %}
+        <p class="text-red-500 text-sm">{{ form.email.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Mobile</label>
+      {{ form.mobile }}
+      {% if form.mobile.errors %}
+        <p class="text-red-500 text-sm">{{ form.mobile.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Profile Image</label>
+      <input type="file" name="profile_image"
+             class="w-full border rounded px-3 py-2 text-sm">
+    </div>
+
+    <div class="flex gap-3 pt-4">
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+        Save Changes
+      </button>
+
+      <a href="{% url 'profile' %}"
+         class="border px-6 py-2 rounded hover:bg-gray-100">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

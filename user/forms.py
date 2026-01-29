@@ -6,39 +6,38 @@ import re
 class AddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        fields = {"full_name","phone","address_line","city","state","pincode","country","is_default"}
-
-    widgets = {"full_name": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder": "Full Name"}),
+        fields = ["full_name","phone","address_line","city","state","pincode","is_default"]
+        widgets = {
+            "full_name": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder": "Full Name"}),
             "phone": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder": "Mobile Number"}),
             "address_line": forms.Textarea(attrs={"class": "w-full border p-2 rounded","rows": 3,"placeholder": "House no, Street, Landmark"}),
-            "city": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
-            "state": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
-            "pincode": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
-            "country": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
+            "city": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder":"City"}),
+            "state": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder":"State"}),
+            "pincode": forms.TextInput(attrs={"class": "w-full border p-2 rounded","placeholder":"Pincode"}),
+            "is_default": forms.CheckboxInput(attrs={"class":"h-4 w-4"}),
         }
 
     def clean_full_name(self):
-        name = self.cleaned_data("full_name").strip()
-
-        if len(name) > 3:
+        name = self.cleaned_data.get("full_name","").strip()
+        if len(name) < 3:
             raise forms.ValidationError("Name must be atleast 3 characters..")
-        if not re.match(r"^[A-Za-z]+$",name):
+        if not re.fullmatch(r"^[A-Za-z ]+",name):
             raise forms.ValidationError("Name must contain only letters.")
         return name
     
     def clean_phone(self):
-        phone = self.cleaned_data("phone")
+        phone = self.cleaned_data.get("phone","").strip()
 
-        if not re.match(r"^[6-9]\d{9}$",phone):
+        if not re.fullmatch(r"^[6-9]\d{9}$",phone):
             raise forms.ValidationError("Enter a valid 10 digit mobile number.")
-        if len(set(phone) == 1):
+        if len(set(phone)) == 1:
             raise forms.ValidationError("Invalid mobile number.")
         return phone
     
     def clean_pincode(self):
-        pincode = self.cleaned_data("pincode")
+        pincode = self.cleaned_data.get("pincode","").strip()
 
-        if re.match(r"^\d{6}$",pincode):
+        if not re.fullmatch(r"^[1-9]\d{5}$",pincode):
             raise forms.ValidationError("Enter a valid 6-digit pincode.")
         return pincode
 
@@ -72,7 +71,7 @@ class EditProfileForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This email id is already registered.")
         return email
     
@@ -84,7 +83,7 @@ class EditProfileForm(forms.ModelForm):
             raise forms.ValidationError("Enter a valid mobile number")
         if mob[0] not in "6789":
             raise forms.ValidationError("Enter a valid Indian number.")
-        if User.objects.filter(mobile=mob).exists():
+        if User.objects.filter(mobile=mob).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This mobile number is already registered.")
         return mob
     

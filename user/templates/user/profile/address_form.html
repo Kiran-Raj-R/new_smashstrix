@@ -1,39 +1,159 @@
 {% extends "user/profile/base.html" %}
+{% block title %}
+  {% if form.instance.pk %}Edit Address{% else %}Add Address{% endif %} - SmashStrix
+{% endblock %}
 
-{% block dashboard_content %}
-<div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+{% block content %}
+<style>
+  body {
+    background-color: #f9fafb;
+    font-family: 'Inter', 'Poppins', sans-serif;
+  }
 
-  <h2 class="text-xl font-semibold mb-6">
-    {% if form.instance.pk %}Edit Address{% else %}Add Address{% endif %}
-  </h2>
+  .form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+  }
 
-  <form method="POST" class="space-y-4">
-    {% csrf_token %}
+  .form-card {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 520px;
+  }
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {{ form.full_name }}
-      {{ form.phone }}
-    </div>
+  .form-card h2 {
+    text-align: center;
+    color: #1e3a8a;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
 
-    {{ form.address_line1 }}
-    {{ form.city }}
-    {{ form.state }}
-    {{ form.pincode }}
+  .form-card label {
+    font-weight: 500;
+    color: #374151;
+  }
 
-    <div class="flex items-center gap-2">
-      {{ form.is_default }}
-      <label class="text-sm">Set as default address</label>
-    </div>
+  .form-card input,
+  .form-card textarea,
+  .form-card select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease-in-out;
+  }
 
-    <div class="flex gap-4 mt-6">
-      <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-        Save
+  .form-card input:focus,
+  .form-card textarea:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  .has-error input,
+  .has-error textarea {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2;
+  }
+
+  .errorlist {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: #dc2626;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .form-card button {
+    width: 100%;
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 1rem;
+    transition: background 0.3s;
+  }
+
+  .form-card button:hover {
+    background-color: #1e40af;
+  }
+
+  .cancel-link {
+    display: block;
+    text-align: center;
+    margin-top: 0.75rem;
+    color: #6b7280;
+    text-decoration: none;
+  }
+
+  .cancel-link:hover {
+    text-decoration: underline;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+</style>
+
+<div class="form-container">
+  <div class="form-card">
+
+    <h2>
+      {% if form.instance.pk %}
+        Edit Address
+      {% else %}
+        Add New Address
+      {% endif %}
+    </h2>
+
+    <form method="POST" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="errorlist">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+
+          {% if field.errors %}
+            <ul class="errorlist">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit">
+        {% if form.instance.pk %}Update Address{% else %}Save Address{% endif %}
       </button>
-      <a href="{% url 'address_list' %}" class="px-6 py-2 border rounded-lg">
-        Cancel
-      </a>
-    </div>
+    </form>
 
-  </form>
+    <a href="{% url 'address_list' %}" class="cancel-link">
+      Cancel
+    </a>
+
+  </div>
 </div>
 {% endblock %}
