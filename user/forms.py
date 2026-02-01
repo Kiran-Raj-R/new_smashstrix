@@ -68,7 +68,6 @@ class EditProfileForm(forms.ModelForm):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return name.capitalize()
     
-
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():

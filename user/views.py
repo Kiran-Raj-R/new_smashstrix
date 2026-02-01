@@ -146,53 +146,62 @@ def address_set_default(request, pk):
 @login_required(login_url="login")
 def edit_profile(request):
     user = request.user
-    form = EditProfileForm(instance=user)
+    old_email = user.email
+    form = EditProfileForm(request.POST or None, request.FILES or None, instance=user)
 
-    if request.method == "POST":
-        form = EditProfileForm(request.POST, request.FILES, instance=user)
+    if request.method == "POST" and form.is_valid():
+        new_email = form.cleaned_data["email"]
+        user.first_name = form.cleaned_data["first_name"]
+        user.last_name = form.cleaned_data["last_name"]
+        user.mobile = form.cleaned_data["mobile"]
+        if request.FILES.get("profile_image"):
+            user.profile_image = request.FILES["profile_image"]
 
-        if form.is_valid():
-            new_email = form.cleaned_data.get("email")
-            if new_email != user.email:
-                user.pending_email = new_email
-                form.cleaned_data["email"] = user.email
-                form.save(update_fields=["first_name", "last_name", "mobile", "profile_image"])
-                send_email_change_otp(user)
-                messages.info(request,"OTP sent to your new email. Please verify to complete the change.")
-                return redirect("verify_email_change_otp")
-            form.save()
-            messages.success(request, "Profile updated successfully.")
-            return redirect("profile")
+        if new_email != old_email:
+            user.pending_email = new_email
+            send_email_change_otp(user)
+            user.save(update_fields=[
+                "first_name", "last_name", "mobile",
+                "profile_image", "pending_email","otp","otp_created"])
+            messages.info(request, "OTP sent to verify your new email.")
+            return redirect("verify_email_change")
+
+        user.save(update_fields=["first_name","last_name","mobile","profile_image"])
+        messages.success(request, "Profile updated successfully.")
+        return redirect("profile")
+
     return render(request, "user/profile/edit_profile.html", {"form": form})
 
 
 @login_required(login_url="login")
 def verify_email_change_otp(request):
     user = request.user
+
     if not user.pending_email:
         return redirect("profile")
-    remaining_seconds = 0
-    if user.otp_created:
-        elapsed = (timezone.now() - user.otp_created).seconds
-        remaining_seconds = max(0, 300 - elapsed)
 
     if request.method == "POST":
-        entered_otp = request.POST.get("otp")
-        if user.otp != entered_otp:
-            messages.error(request, "Invalid OTP.")
-            return redirect("verify_email_change_otp")
-        if user.otp_expired():
-            messages.error(request, "OTP expired. Please resend.")
-            return redirect("verify_email_change_otp")
-        user.email = user.pending_email
-        user.pending_email = None
-        user.otp = None
-        user.otp_created = None
-        user.otp_verified = True
-        user.save()
-        messages.success(request, "Email updated successfully.")
-        return redirect("profile")
-    return render(request,"accounts/verify_otp.html",{"user": user,"remaining_seconds": remaining_seconds,"email_change": True,},)
+        otp = request.POST.get("otp")
+
+        if user.otp == otp and not user.otp_expired():
+            user.email = user.pending_email
+            user.pending_email = None
+            user.otp = None
+            user.otp_created = None
+            user.otp_verified = True
+            user.save()
+
+            messages.success(request, "Email verified and updated successfully.")
+            return redirect("profile")
+
+        messages.error(request, "Invalid or expired OTP.")
+
+    remaining_seconds = 0
+    if user.otp_created:
+        expiry_time = user.otp_created + timezone.timedelta(minutes=5)
+        remaining_seconds = max(int((expiry_time - timezone.now()).total_seconds()), 0)
+
+    return render(request,"accounts/otp_verify.html",{"user": user, "remaining_seconds": remaining_seconds,"email_change":True,})
 
 @login_required(login_url="login")
 def resend_email_change_otp(request):
@@ -201,7 +210,7 @@ def resend_email_change_otp(request):
         return redirect("profile")
     send_email_change_otp(user)
     messages.success(request, "OTP resent to your new email.")
-    return redirect("verify_email_change_otp")
+    return redirect("verify_email_change")
 
 
 @login_required(login_url="login")
