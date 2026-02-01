@@ -15,6 +15,7 @@ class User(AbstractUser):
     otp_created = models.DateTimeField(null=True,blank=True)
     otp_verified = models.BooleanField(default=False)
     mobile = models.CharField(max_length=10,unique=True,blank=True,null=True)
+    profile_image = models.ImageField(upload_to="profiles/", null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
