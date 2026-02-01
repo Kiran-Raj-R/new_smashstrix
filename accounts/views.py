@@ -1,7 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
 from django.contrib.auth import login,logout,get_user_model
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from . models import User
 from . utils import send_otp, send_reset_password_otp
