@@ -48,10 +48,10 @@ class EditProfileForm(forms.ModelForm):
         model = User
         fields = ["first_name", "last_name", "email", "mobile"]
         widgets = {
-            'first_name' : forms.TextInput(attrs={'placeholder':'First name'}),
-            'last_name' : forms.TextInput(attrs={'placeholder':'Last Name'}),
-            'mobile' : forms.TextInput(attrs={'placeholder':'Mob. No'}),
-            'email' : forms.EmailInput(attrs={'placeholder':'Email'}),
+            'first_name' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'First name'}),
+            'last_name' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Last Name'}),
+            'mobile' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Mob. No'}),
+            'email' : forms.EmailInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Email'}),
         }
 
     def clean_first_name(self):
