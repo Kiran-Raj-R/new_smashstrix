@@ -8,6 +8,7 @@ from .models import Address
 from .forms import AddressForm, EditProfileForm, ChangePasswordForm
 from django.contrib import messages
 from accounts.utils import send_email_change_otp
+from django.utils import timezone
 
 
 def home(request):
@@ -145,39 +146,63 @@ def address_set_default(request, pk):
 @login_required(login_url="login")
 def edit_profile(request):
     user = request.user
-    old_email = user.email
-    form = EditProfileForm(request.POST or None, instance=user)
-    if request.method == "POST" and form.is_valid():
-        new_email = form.cleaned_data["email"]
-        user.first_name = form.cleaned_data["first_name"]
-        user.last_name = form.cleaned_data["last_name"]
-        user.mobile = form.cleaned_data["mobile"]
+    form = EditProfileForm(instance=user)
 
-        if new_email != old_email:
-            send_email_change_otp(user, new_email)
-            messages.info(request, "OTP sent to your new email for verification.")
-            return redirect("verify_email_change")
-        user.save()
-        messages.success(request, "Profile updated successfully.")
-        return redirect("profile")
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, request.FILES, instance=user)
+
+        if form.is_valid():
+            new_email = form.cleaned_data.get("email")
+            if new_email != user.email:
+                user.pending_email = new_email
+                form.cleaned_data["email"] = user.email
+                form.save(update_fields=["first_name", "last_name", "mobile", "profile_image"])
+                send_email_change_otp(user)
+                messages.info(request,"OTP sent to your new email. Please verify to complete the change.")
+                return redirect("verify_email_change_otp")
+            form.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect("profile")
     return render(request, "user/profile/edit_profile.html", {"form": form})
 
+
 @login_required(login_url="login")
-def verify_email_change(request):
+def verify_email_change_otp(request):
     user = request.user
+    if not user.pending_email:
+        return redirect("profile")
+    remaining_seconds = 0
+    if user.otp_created:
+        elapsed = (timezone.now() - user.otp_created).seconds
+        remaining_seconds = max(0, 300 - elapsed)
+
     if request.method == "POST":
-        otp = request.POST.get("otp")
-        if user.otp == otp and not user.otp_expired():
-            user.email = user.pending_email
-            user.pending_email = None
-            user.otp = None
-            user.otp_created = None
-            user.otp_verified = True
-            user.save()
-            messages.success(request, "Email updated successfully.")
-            return redirect("profile")
-        messages.error(request, "Invalid or expired OTP.")
-    return render(request, "user/profile/verify_email.html")
+        entered_otp = request.POST.get("otp")
+        if user.otp != entered_otp:
+            messages.error(request, "Invalid OTP.")
+            return redirect("verify_email_change_otp")
+        if user.otp_expired():
+            messages.error(request, "OTP expired. Please resend.")
+            return redirect("verify_email_change_otp")
+        user.email = user.pending_email
+        user.pending_email = None
+        user.otp = None
+        user.otp_created = None
+        user.otp_verified = True
+        user.save()
+        messages.success(request, "Email updated successfully.")
+        return redirect("profile")
+    return render(request,"accounts/verify_otp.html",{"user": user,"remaining_seconds": remaining_seconds,"email_change": True,},)
+
+@login_required(login_url="login")
+def resend_email_change_otp(request):
+    user = request.user
+    if not user.pending_email:
+        return redirect("profile")
+    send_email_change_otp(user)
+    messages.success(request, "OTP resent to your new email.")
+    return redirect("verify_email_change_otp")
+
 
 @login_required(login_url="login")
 def change_password(request):
