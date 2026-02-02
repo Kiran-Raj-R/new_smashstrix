@@ -1,34 +1,27 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from products.models import Product, ColorVariant
+
+User = settings.AUTH_USER_MODEL
 
 
 class Cart(models.Model):
-    user = models.OneToOneField( settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="cart")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="cart")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Cart of {self.user.first_name} {self.user.last_name}"
-
-    def total_items(self):
-        return sum(item.quantity for item in self.items.all())
-
-    def subtotal(self):
-        return sum(item.item_total() for item in self.items.all())
+        return f"Cart of {self.user}"
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart,on_delete=models.CASCADE,related_name="items")
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    variant = models.ForeignKey(ColorVariant, on_delete=models.CASCADE)
+    color_variant = models.ForeignKey(ColorVariant, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("cart", "product", "variant")
+        unique_together = ("cart", "product", "color_variant")
 
     def __str__(self):
-        return f"{self.product.name} ({self.variant.color})"
-
-    def item_total(self):
-        price = self.product.discount_price or self.product.price
-        return price * self.quantity
+        return f"{self.product.name} ({self.quantity})"
