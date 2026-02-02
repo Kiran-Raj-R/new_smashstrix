@@ -87,16 +87,29 @@ class EditProfileForm(forms.ModelForm):
         return mob
     
 class ChangePasswordForm(forms.Form):
-    old_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "Current Password"}),label="Current Password")
-    new_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "New Password"}),label="New Password")
-    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={"placeholder": "Confirm New Password"}),label="Confirm New Password")
+    old_password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm","placeholder": "Current Password"}),label="Current Password")
+    new_password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm","placeholder": "New Password"}),label="New Password")
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm","placeholder": "Confirm New Password"}),label="Confirm New Password")
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get("old_password")
+        if not self.user.check_password(old_password):
+            raise forms.ValidationError("Current password is not correct..")
+        return old_password
 
     def clean(self):
         cleaned_data = super().clean()
         new = cleaned_data.get("new_password")
         confirm = cleaned_data.get("confirm_password")
-        if new and len(new) < 8:
-            raise forms.ValidationError("New password must be at least 8 characters.")
-        if new != confirm:
+        if new:
+            if len(new) < 8:
+                raise forms.ValidationError("New password must be at least 8 characters.")
+            if self.user.check_password(new):
+                raise forms.ValidationError("New password cannot be the same as old password.")
+        if new and confirm and new != confirm:
             raise forms.ValidationError("Passwords do not match.")
         return cleaned_data

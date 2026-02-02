@@ -215,16 +215,12 @@ def resend_email_change_otp(request):
 
 @login_required(login_url="login")
 def change_password(request):
-    form = ChangePasswordForm(request.POST or None)
+    form = ChangePasswordForm(request.user, request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         user = request.user
-        old_password = form.cleaned_data["old_password"]
         new_password = form.cleaned_data["new_password"]
 
-        if not user.check_password(old_password):
-            messages.error(request, "Current password is incorrect.")
-            return redirect("change_password")
         user.set_password(new_password)
         user.save()
         logout(request)

@@ -1,71 +1,187 @@
 {% extends "user/profile/base.html" %}
-{% load static %}
+{% block title %}Edit Profile - SmashStrix{% endblock %}
 
 {% block dashboard_content %}
-<div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+<style>
+  .form-card {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 520px;
+  }
 
-  <h2 class="text-xl font-semibold mb-6 border-b pb-3">Edit Profile</h2>
+  .form-card h2 {
+    text-align: center;
+    color: #1e3a8a;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
 
-  <form method="POST" enctype="multipart/form-data" class="space-y-5">
-    {% csrf_token %}
+  .form-card label {
+    font-weight: 500;
+    color: #374151;
+  }
 
-    {% if form.non_field_errors %}
-      <p class="text-red-600 text-sm">{{ form.non_field_errors }}</p>
-    {% endif %}
+  .form-card input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease-in-out;
+  }
 
-    <div>
-      <label class="block text-sm font-medium mb-1">First Name</label>
-      {{ form.first_name }}
-      {% if form.first_name.errors %}
-        <p class="text-red-500 text-sm">{{ form.first_name.errors.0 }}</p>
+  .form-card input:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  .has-error input {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2;
+  }
+
+  .errorlist {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    color: #dc2626;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .non-field-errors {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .help-text {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  .form-card button {
+    width: 100%;
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 1.2rem;
+    transition: background 0.3s;
+  }
+
+  .form-card button:hover {
+    background-color: #1e40af;
+  }
+
+  .cancel-btn {
+    width: 100%;
+    display: block;
+    text-align: center;
+    margin-top: 0.75rem;
+    padding: 0.65rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    color: #374151;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .cancel-btn:hover {
+    background-color: #f9fafb;
+  }
+</style>
+
+<div class="flex justify-center">
+  <div class="form-card">
+    <h2>Edit Profile</h2>
+
+    <form method="POST" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="non-field-errors">
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
       {% endif %}
-    </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Last Name</label>
-      {{ form.last_name }}
-      {% if form.last_name.errors %}
-        <p class="text-red-500 text-sm">{{ form.last_name.errors.0 }}</p>
-      {% endif %}
-    </div>
+      <div class="{% if form.first_name.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+        <label>{{ form.first_name.label }}</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}
+          <ul class="errorlist">
+            {% for error in form.first_name.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Email</label>
-      {{ form.email }}
-      <p class="text-xs text-gray-500 mt-1">
-        Changing email requires OTP verification
-      </p>
-      {% if form.email.errors %}
-        <p class="text-red-500 text-sm">{{ form.email.errors.0 }}</p>
-      {% endif %}
-    </div>
+      <div class="{% if form.last_name.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+        <label>{{ form.last_name.label }}</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}
+          <ul class="errorlist">
+            {% for error in form.last_name.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Mobile</label>
-      {{ form.mobile }}
-      {% if form.mobile.errors %}
-        <p class="text-red-500 text-sm">{{ form.mobile.errors.0 }}</p>
-      {% endif %}
-    </div>
+      <div class="{% if form.email.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+        <label>{{ form.email.label }}</label>
+        {{ form.email }}
+        <p class="help-text">
+          Changing email requires OTP verification
+        </p>
+        {% if form.email.errors %}
+          <ul class="errorlist">
+            {% for error in form.email.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Profile Image</label>
-      <input type="file" name="profile_image"
-             class="w-full border rounded px-3 py-2 text-sm">
-    </div>
+      <div class="{% if form.mobile.errors %}has-error{% endif %}" style="margin-bottom: 1rem;">
+        <label>{{ form.mobile.label }}</label>
+        {{ form.mobile }}
+        {% if form.mobile.errors %}
+          <ul class="errorlist">
+            {% for error in form.mobile.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
 
-    <div class="flex gap-3 pt-4">
-      <button
-        type="submit"
-        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-        Save Changes
-      </button>
+      <div style="margin-bottom: 1rem;">
+        <label>Profile Image</label>
+        <input type="file" name="profile_image">
+      </div>
 
-      <a href="{% url 'profile' %}"
-         class="border px-6 py-2 rounded hover:bg-gray-100">
+      <button type="submit">Save Changes</button>
+
+      <a href="{% url 'profile' %}" class="cancel-btn">
         Cancel
       </a>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 {% endblock %}
