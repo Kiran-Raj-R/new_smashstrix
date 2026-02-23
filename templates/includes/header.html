@@ -3,23 +3,42 @@
 
 <header class="bg-blue-800 text-white shadow-md">
     <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+
         <div class="text-2xl font-bold flex items-center">
             <a href="{% url 'home' %}">SmashStrix</a>
         </div>
-        <div class="flex space-x-6 items-center text-xl">
-            <a href="#" class="relative hover:text-blue-200 transition transform hover:scale-110">
-                <i class="ri-shopping-cart-2-line"></i>
+        <div class="flex space-x-6 items-center text-2xl">
+            <a href="#"
+               class="relative hover:text-blue-200 transition transform hover:scale-110">
+                <i class="ri-heart-3-line"></i>
             </a>
+            <a href="{% url 'cart_detail' %}"
+               class="relative hover:text-blue-200 transition transform hover:scale-110">
+
+                <i class="ri-shopping-cart-2-line"></i>
+                {% if user.is_authenticated %}
+                    {% if request.user.cart.items.count %}
+                        <span class="absolute -top-2 -right-3 bg-red-500 text-white text-xs
+                                     w-5 h-5 flex items-center justify-center rounded-full">
+                            {{ request.user.cart.items.count }}
+                        </span>
+                    {% endif %}
+                {% endif %}
+
+            </a>
+
             {% if user.is_authenticated %}
-                <a href="{% url 'profile' %}" class="hover:text-blue-200 transition transform hover:scale-110">
+                <a href="{% url 'profile' %}"
+                   class="hover:text-blue-200 transition transform hover:scale-110">
                     <i class="ri-user-3-fill"></i>
                 </a>
             {% else %}
-                <a href="{% url 'login' %}" class="hover:text-blue-200 transition transform hover:scale-110">
+                <a href="{% url 'login' %}"
+                   class="hover:text-blue-200 transition transform hover:scale-110">
                     <i class="ri-user-line"></i>
                 </a>
             {% endif %}
-        </div>
 
+        </div>
     </div>
 </header>
