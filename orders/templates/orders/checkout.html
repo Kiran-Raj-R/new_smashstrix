@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto py-10">
+
+  <h2 class="text-2xl font-bold mb-8">Checkout</h2>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <div class="lg:col-span-2 space-y-8">
+
+      <div class="bg-white p-6 rounded-xl shadow border">
+        <h3 class="text-lg font-semibold mb-4">Select Delivery Address</h3>
+
+        {% if addresses %}
+          <form method="POST" action="{% url 'place_order' %}">
+            {% csrf_token %}
+
+            <div class="space-y-4">
+              {% for address in addresses %}
+              <label class="block border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
+                <div class="flex items-start gap-3">
+                  <input type="radio"
+                         name="address_id"
+                         value="{{ address.id }}"
+                         {% if address.is_default %}checked{% endif %}
+                         required
+                         class="mt-1">
+
+                  <div>
+                    <p class="font-semibold">{{ address.full_name }}</p>
+                    <p class="text-sm text-gray-600">
+                      {{ address.address_line1 }},
+                      {{ address.city }},
+                      {{ address.state }} -
+                      {{ address.pincode }}
+                    </p>
+                    <p class="text-sm text-gray-600">
+                      Phone: {{ address.phone }}
+                    </p>
+                  </div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+
+            <div class="mt-4">
+              <a href="{% url 'address_add' %}"
+                 class="text-blue-600 hover:underline text-sm">
+                 + Add New Address
+              </a>
+            </div>
+
+            <div class="mt-10">
+              <h3 class="text-lg font-semibold mb-4">Order Items</h3>
+
+              <div class="space-y-4">
+                {% for item in cart_items %}
+                <div class="flex items-center justify-between border rounded-lg p-4">
+
+                  <div class="flex items-center gap-4">
+                    {% if item.product.images.first %}
+                    <img src="{{ item.product.images.first.image.url }}"
+                         class="w-16 h-16 object-cover rounded">
+                    {% endif %}
+
+                    <div>
+                      <p class="font-semibold">{{ item.product.name }}</p>
+                      <p class="text-sm text-gray-600">
+                        Color: {{ item.color_variant.color }}
+                      </p>
+                      <p class="text-sm text-gray-600">
+                        Qty: {{ item.quantity }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p class="font-semibold text-green-700">
+                    ₹{{ item.total_price }}
+                  </p>
+
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="bg-white p-6 rounded-xl shadow border sticky top-6">
+
+        <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+
+        <div class="space-y-3 text-sm">
+
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span>₹{{ subtotal }}</span>
+          </div>
+
+          <div class="flex justify-between">
+            <span>Tax (5%)</span>
+            <span>₹{{ tax }}</span>
+          </div>
+
+          <div class="flex justify-between">
+            <span>Shipping</span>
+            <span>₹{{ shipping }}</span>
+          </div>
+
+          <hr>
+
+          <div class="flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span class="text-green-700">₹{{ total }}</span>
+          </div>
+
+        </div>
+
+        <button type="submit"
+                class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg
+                       hover:bg-green-700 transition font-semibold">
+          Place Order (Cash on Delivery)
+        </button>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
