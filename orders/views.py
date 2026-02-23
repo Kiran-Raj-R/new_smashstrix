@@ -18,9 +18,9 @@ def checkout_view(request):
     if not cart_items.exists():
         return redirect("cart_detail")
 
-    subtotal = sum(item.total_price for item in cart_items)
+    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
-    shipping = Decimal("50.00") if subtotal > 0 else Decimal("0.00")
+    shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     total = subtotal + tax + shipping
     addresses = Address.objects.filter(user=request.user)
     default_address = addresses.filter(is_default=True).first()
@@ -40,9 +40,8 @@ def checkout_view(request):
 @login_required(login_url="login")
 @transaction.atomic
 def place_order(request):
-
     if request.method != "POST":
-        return redirect("orders:checkout")
+        return redirect("checkout")
 
     address_id = request.POST.get("address_id")
     address = get_object_or_404(Address, id=address_id, user=request.user)
@@ -57,7 +56,7 @@ def place_order(request):
         messages.error(request, "Your cart is empty.")
         return redirect("cart_detail")
 
-    subtotal = sum(item.total_price for item in cart_items)
+    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal > 0 else Decimal("0.00")
     total = subtotal + tax + shipping
@@ -76,15 +75,11 @@ def place_order(request):
             return redirect("checkout")
         variant.stock -= item.quantity
         variant.save()
+        price = item.product.discount_price or item.product.price
+        total_price = price * item.quantity
 
-        OrderItem.objects.create(
-            order=order,
-            product=item.product,
-            color_variant=variant,
-            quantity=item.quantity,
-            price=item.product.discount_price or item.product.price,
-            total_price=item.total_price
-        )
+        OrderItem.objects.create(order=order,product=item.product,color_variant=variant,
+            quantity=item.quantity,price=item.product.discount_price or item.product.price,total_price=total_price)
     cart_items.delete()
 
     return redirect("order_success", order_id=order.order_id)

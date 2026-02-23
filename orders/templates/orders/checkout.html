@@ -8,82 +8,126 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
+    <!-- LEFT SIDE -->
     <div class="lg:col-span-2 space-y-8">
 
       <div class="bg-white p-6 rounded-xl shadow border">
         <h3 class="text-lg font-semibold mb-4">Select Delivery Address</h3>
 
         {% if addresses %}
-          <form method="POST" action="{% url 'place_order' %}">
-            {% csrf_token %}
+        <form method="POST" action="{% url 'place_order' %}">
+          {% csrf_token %}
+
+          <div class="space-y-4">
+            {% for address in addresses %}
+            <label class="block border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
+              <div class="flex items-start gap-3">
+                <input type="radio"
+                       name="address_id"
+                       value="{{ address.id }}"
+                       {% if address.is_default %}checked{% endif %}
+                       required
+                       class="mt-1">
+
+                <div>
+                  <p class="font-semibold">{{ address.full_name }}</p>
+                  <p class="text-sm text-gray-600">
+                    {{ address.address_line1 }},
+                    {{ address.city }},
+                    {{ address.state }} -
+                    {{ address.pincode }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    Phone: {{ address.phone }}
+                  </p>
+                </div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="mt-4">
+            <a href="{% url 'address_add' %}"
+               class="text-blue-600 hover:underline text-sm">
+               + Add New Address
+            </a>
+          </div>
+            <div class="mt-10">
+            <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
 
             <div class="space-y-4">
-              {% for address in addresses %}
-              <label class="block border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
-                <div class="flex items-start gap-3">
-                  <input type="radio"
-                         name="address_id"
-                         value="{{ address.id }}"
-                         {% if address.is_default %}checked{% endif %}
-                         required
-                         class="mt-1">
+                <div class="flex items-center justify-between border rounded-lg p-4 bg-green-50 border-green-400">
+                <div>
+                    <p class="font-semibold text-green-700">Cash on Delivery (COD)</p>
+                    <p class="text-sm text-gray-600">
+                    Pay when your order is delivered to your doorstep.
+                    </p>
+                </div>
+
+                <span class="text-sm font-medium text-green-700">
+                    Available
+                </span>
+                </div>
+                <div class="flex items-center justify-between border rounded-lg p-4 opacity-50 cursor-not-allowed">
+                <div>
+                    <p class="font-semibold">Online Payment</p>
+                    <p class="text-sm text-gray-600">
+                    Credit/Debit Card, UPI, Netbanking
+                    </p>
+                </div>
+
+                <span class="text-sm font-medium text-gray-500">
+                    Coming Soon
+                </span>
+                </div>
+
+            </div>
+            </div>
+
+          <div class="mt-10">
+            <h3 class="text-lg font-semibold mb-4">Order Items</h3>
+
+            <div class="space-y-4">
+              {% for item in cart_items %}
+              <div class="flex items-center justify-between border rounded-lg p-4">
+
+                <div class="flex items-center gap-4">
+                  {% if item.product.images.first %}
+                  <img src="{{ item.product.images.first.image.url }}"
+                       class="w-16 h-16 object-cover rounded">
+                  {% endif %}
 
                   <div>
-                    <p class="font-semibold">{{ address.full_name }}</p>
+                    <p class="font-semibold">{{ item.product.name }}</p>
                     <p class="text-sm text-gray-600">
-                      {{ address.address_line1 }},
-                      {{ address.city }},
-                      {{ address.state }} -
-                      {{ address.pincode }}
+                      Color: {{ item.color_variant.color }}
                     </p>
                     <p class="text-sm text-gray-600">
-                      Phone: {{ address.phone }}
+                      Qty: {{ item.quantity }}
                     </p>
                   </div>
                 </div>
-              </label>
+
+                <p class="font-semibold text-green-700">
+                  ₹{{ item.product.discount_price|default:item.product.price }}
+                </p>
+
+              </div>
               {% endfor %}
             </div>
+          </div>
 
-            <div class="mt-4">
-              <a href="{% url 'address_add' %}"
-                 class="text-blue-600 hover:underline text-sm">
-                 + Add New Address
-              </a>
-            </div>
+          <div class="lg:hidden mt-10">
+            <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+          </div>
 
-            <div class="mt-10">
-              <h3 class="text-lg font-semibold mb-4">Order Items</h3>
-
-              <div class="space-y-4">
-                {% for item in cart_items %}
-                <div class="flex items-center justify-between border rounded-lg p-4">
-
-                  <div class="flex items-center gap-4">
-                    {% if item.product.images.first %}
-                    <img src="{{ item.product.images.first.image.url }}"
-                         class="w-16 h-16 object-cover rounded">
-                    {% endif %}
-
-                    <div>
-                      <p class="font-semibold">{{ item.product.name }}</p>
-                      <p class="text-sm text-gray-600">
-                        Color: {{ item.color_variant.color }}
-                      </p>
-                      <p class="text-sm text-gray-600">
-                        Qty: {{ item.quantity }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p class="font-semibold text-green-700">
-                    ₹{{ item.total_price }}
-                  </p>
-
-                </div>
-                {% endfor %}
-              </div>
-            </div>
+        {% else %}
+          <p class="text-gray-600">No saved addresses found.</p>
+          <a href="{% url 'address_add' %}"
+             class="text-blue-600 hover:underline">
+             Add Address
+          </a>
+        {% endif %}
 
       </div>
     </div>
@@ -102,7 +146,7 @@
 
           <div class="flex justify-between">
             <span>Tax (5%)</span>
-            <span>₹{{ tax }}</span>
+            <span>₹{{ tax|floatformat:2 }}</span>
           </div>
 
           <div class="flex justify-between">
@@ -114,18 +158,18 @@
 
           <div class="flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span class="text-green-700">₹{{ total }}</span>
+            <span class="text-green-700">₹{{ total|floatformat:2 }}</span>
           </div>
 
         </div>
 
+        {% if addresses %}
         <button type="submit"
                 class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg
-                       hover:bg-green-700 transition font-semibold">
-          Place Order (Cash on Delivery)
+                    hover:bg-green-700 transition font-semibold">
+        Place Order
         </button>
-
-        </form>
+        {% endif %}
 
       </div>
     </div>
