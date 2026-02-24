@@ -115,7 +115,7 @@ def cancel_order(request, order_id):
         return redirect("order_detail", order_id=order.order_id)
     if request.method == "POST":
         reason = request.POST.get("reason", "")
-        for item in order.orderitem_set.all():
+        for item in order.items.all():
             if item.color_variant:
                 item.color_variant.stock += item.quantity
                 item.color_variant.save()
