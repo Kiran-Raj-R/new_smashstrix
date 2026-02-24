@@ -28,4 +28,8 @@ urlpatterns = [
     path("products/image/delete/<int:img_id>/", views.product_image_delete,name="admin_product_image_delete"),
     path("products/<int:product_id>/color/new/", views.color_variant_add,name="admin_color_variant_add"),
     path("products/color/delete/<int:variant_id>/", views.color_variant_delete,name="admin_color_variant_delete"),
+
+    path("orders/",views.admin_order_list,name="admin_order_list"),
+    path("orders/<str:order_id>/",views.admin_order_detail, name="admin_order_detail"),
+    
 ]

@@ -59,8 +59,10 @@
                 </td>
 
                 <td class="p-3">
-                    {% if product.stock > 0 %}
-                        <span class="text-green-700 font-semibold">{{ product.stock }}</span>
+                    {% if product.total_stock and product.total_stock > 0 %}
+                        <span class="text-green-700 font-semibold">
+                            {{ product.total_stock }}
+                        </span>
                     {% else %}
                         <span class="text-red-600 font-semibold">Out of Stock</span>
                     {% endif %}

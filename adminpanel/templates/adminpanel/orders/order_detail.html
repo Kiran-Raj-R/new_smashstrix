@@ -1,0 +1,151 @@
+{% extends "adminpanel/base_admin.html" %}
+
+{% block content %}
+
+<div class="p-6">
+
+  <h2 class="text-2xl font-bold mb-6">
+    Order: {{ order.order_id }}
+  </h2>
+
+  <!-- ========================= -->
+  <!-- BASIC INFO -->
+  <!-- ========================= -->
+  <div class="bg-white shadow rounded-lg p-6 mb-6">
+
+    <div class="grid grid-cols-2 gap-6">
+
+      <div>
+        <p class="text-sm text-gray-500">Customer</p>
+        <p class="font-medium">{{ order.user.email }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Order Date</p>
+        <p>{{ order.created_at|date:"d M Y, h:i A" }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Payment Method</p>
+        <p>{{ order.payment_method }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-500">Total</p>
+        <p class="font-semibold text-green-700">
+          ₹{{ order.total_amount }}
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================= -->
+  <!-- ADDRESS -->
+  <!-- ========================= -->
+  <div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h3 class="font-semibold mb-4">Shipping Address</h3>
+
+    <p>{{ order.address.full_name }}</p>
+    <p>
+      {{ order.address.address_line1 }},
+      {{ order.address.city }},
+      {{ order.address.state }} -
+      {{ order.address.pincode }}
+    </p>
+    <p>Phone: {{ order.address.phone }}</p>
+  </div>
+
+  <!-- ========================= -->
+  <!-- ITEMS -->
+  <!-- ========================= -->
+  <div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h3 class="font-semibold mb-4">Order Items</h3>
+
+    <table class="w-full text-sm">
+      <thead class="bg-gray-100 text-left">
+        <tr>
+          <th class="p-3">Product</th>
+          <th class="p-3">Variant</th>
+          <th class="p-3">Qty</th>
+          <th class="p-3">Price</th>
+          <th class="p-3">Total</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for item in order_items %}
+        <tr class="border-t">
+          <td class="p-3">{{ item.product.name }}</td>
+          <td class="p-3">
+            {% if item.color_variant %}
+              {{ item.color_variant.color }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="p-3">{{ item.quantity }}</td>
+          <td class="p-3">₹{{ item.price }}</td>
+          <td class="p-3">₹{{ item.total_price }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========================= -->
+  <!-- STATUS UPDATE -->
+  <!-- ========================= -->
+  <div class="bg-white shadow rounded-lg p-6">
+
+    <h3 class="font-semibold mb-4">Update Order Status</h3>
+
+    {% if order.status == "Delivered" or order.status == "Cancelled" %}
+
+      <p class="text-red-600 font-medium">
+        This order is finalized and cannot be modified.
+      </p>
+
+    {% else %}
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="flex gap-4 items-center">
+
+        <select name="status" class="border px-4 py-2 rounded">
+
+          {% if order.status == "pending" %}
+            <option value="Processing">Processing</option>
+            <option value="Cancelled">Cancelled</option>
+
+          {% elif order.status == "Processing" %}
+            <option value="Shipped">Shipped</option>
+            <option value="Cancelled">Cancelled</option>
+
+          {% elif order.status == "Shipped" %}
+            <option value="Out for Delivery">Out for Delivery</option>
+
+          {% elif order.status == "Out for Delivery" %}
+            <option value="Delivered">Delivered</option>
+
+          {% endif %}
+
+        </select>
+
+        <button type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded">
+          Update
+        </button>
+
+      </div>
+    </form>
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% endblock %}

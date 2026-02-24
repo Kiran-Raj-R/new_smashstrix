@@ -1,9 +1,10 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
-from django.db.models import Q
+from django.db.models import Q,Sum
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
+from orders.models import Order, OrderItem
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
@@ -230,7 +231,8 @@ def product_edit(request, product_id):
 @login_required(login_url='admin_login')
 def product_list(request):
     search = request.GET.get("search", "")
-    products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)|Q(category__name__icontains=search),).order_by("-created_at")
+    products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)
+                                      |Q(category__name__icontains=search),).annotate(total_stock=Sum("colors__stock")).order_by("-created_at")
     paginator = Paginator(products, 6)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -267,3 +269,62 @@ def admin_logout(request):
     logout(request)
     request.session.flush()
     return redirect('admin_login')
+
+@never_cache
+@login_required(login_url='admin_login')
+def admin_order_list(request):
+    orders = Order.objects.all().order_by("-created_at")
+    search = request.GET.get("search")
+    status = request.GET.get("status")
+    if search:
+        orders = orders.filter(Q(order_id__icontains=search) |Q(user__email__icontains=search))
+    if status:
+        orders = orders.filter(status=status)
+    paginator = Paginator(orders, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "status": status,
+    }
+    return render(request, "adminpanel/orders/order_list.html", context)
+
+def admin_order_detail(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)
+    order_items = order.items.all()
+    if request.method == "POST":
+
+        new_status = request.POST.get("status")
+        if order.status in ["Delivered", "Cancelled"]:
+            messages.error(request, "Finalized orders cannot be modified.")
+            return redirect("admin_order_detail", order_id=order.order_id)
+
+        valid_transitions = {
+            "pending": ["Processing", "Cancelled"],
+            "Processing": ["Shipped", "Cancelled"],
+            "Shipped": ["Out for Delivery"],
+            "Out for Delivery": ["Delivered"],
+        }
+        allowed_statuses = valid_transitions.get(order.status, [])
+        if new_status not in allowed_statuses:
+            messages.error(request, "Invalid status transition.")
+            return redirect("admin_order_detail", order_id=order.order_id)
+        
+        if new_status == "Cancelled":
+            for item in order_items:
+                if item.color_variant:
+                    item.color_variant.stock += item.quantity
+                    item.color_variant.save()
+        order.status = new_status
+        order.save()
+        messages.success(request, "Order status updated successfully.")
+        return redirect("admin_order_detail", order_id=order.order_id)
+
+    context = {
+        "order": order,
+        "order_items": order_items,
+    }
+    return render(request, "adminpanel/orders/order_detail.html", context)
+
