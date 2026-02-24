@@ -88,3 +88,46 @@ def place_order(request):
 def order_success(request, order_id):
     order = get_object_or_404(Order,order_id=order_id,user=request.user)
     return render(request, "orders/order_success.html", {"order": order})
+
+@login_required(login_url="login")
+def order_list(request):
+    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    return render(request, "orders/order_list.html", {"orders": orders})
+
+@login_required(login_url="login")
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id, user=request.user)
+    order_items = OrderItem.objects.filter(order=order)
+
+    context = {
+        "order": order,
+        "order_items": order_items
+    }
+    return render(request, "orders/order_detail.html", context)
+
+@login_required(login_url="login")
+@transaction.atomic
+def cancel_order(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id, user=request.user)
+
+    if order.status not in ["pending", "processing"]:
+        messages.error(request, "This order cannot be cancelled.")
+        return redirect("order_detail", order_id=order.order_id)
+    if request.method == "POST":
+        reason = request.POST.get("reason", "")
+        for item in order.orderitem_set.all():
+            if item.color_variant:
+                item.color_variant.stock += item.quantity
+                item.color_variant.save()
+            else:
+                item.product.stock += item.quantity
+                item.product.save()
+
+        order.status = "Cancelled"
+        order.cancel_reason = reason
+        order.save()
+        messages.success(request, "Order cancelled successfully.")
+        return redirect("order_detail", order_id=order.order_id)
+
+    return render(request, "orders/cancel_order.html", {"order": order})
+

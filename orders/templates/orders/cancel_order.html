@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto py-16 max-w-xl">
+
+  <div class="bg-white shadow rounded-xl p-8 border">
+
+    <h2 class="text-xl font-semibold mb-6 text-red-600">
+      Cancel Order
+    </h2>
+
+    <p class="mb-6">
+      Are you sure you want to cancel order
+      <span class="font-semibold">{{ order.order_id }}</span> ?
+    </p>
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium mb-2">
+          Reason (Optional)
+        </label>
+        <textarea name="reason"
+                  rows="3"
+                  class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-red-400"></textarea>
+      </div>
+
+      <div class="flex gap-4">
+        <button type="submit"
+                class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+          Confirm Cancel
+        </button>
+
+        <a href="{% url 'order_detail' order.order_id %}"
+           class="px-6 py-2 border rounded-lg hover:bg-gray-100 transition">
+          Go Back
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+{% endblock %}
