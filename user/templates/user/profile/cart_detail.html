@@ -9,14 +9,10 @@
   {% if cart_items %}
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-    <!-- Cart Items -->
     <div class="lg:col-span-2 space-y-6">
 
       {% for item in cart_items %}
       <div class="flex gap-6 border rounded-xl p-4 bg-white shadow-sm">
-
-        <!-- Product Image -->
         <div class="w-28 h-28 flex-shrink-0">
           {% if item.product.images.first %}
           <img src="{{ item.product.images.first.image.url }}"
@@ -26,8 +22,6 @@
                class="w-full h-full object-contain rounded">
           {% endif %}
         </div>
-
-        <!-- Product Info -->
         <div class="flex-1">
           <h2 class="font-semibold text-lg">
             {{ item.product.name }}
@@ -36,16 +30,13 @@
           {% if item.color_variant %}
           <p class="text-sm text-gray-500 mt-1">
             Color:
-            <span class="inline-block w-4 h-4 rounded-full ml-2"
-                  style="background-color: {{ item.color_variant.color }}"></span>
+            <span class="inline-block w-4 h-4 rounded-full ml-2"style="background-color: {{ item.color_variant.color }}"></span>
           </p>
           {% endif %}
 
           <p class="text-sm text-gray-600 mt-1">
             ₹{{ item.unit_price }} each
           </p>
-
-          <!-- Quantity Controls -->
           <div class="flex items-center gap-3 mt-4">
 
             <a href="{% url 'decrement_cart_item' item.id %}"
@@ -66,7 +57,6 @@
 
         </div>
 
-        <!-- Right Section -->
         <div class="text-right flex flex-col justify-between">
           <p class="font-semibold text-lg">
             ₹{{ item.total_price }}
@@ -82,8 +72,6 @@
       {% endfor %}
 
     </div>
-
-    <!-- Order Summary -->
     <div class="border rounded-xl p-6 bg-white shadow-sm h-fit">
 
       <h2 class="text-lg font-semibold mb-6 border-b pb-3">
@@ -114,7 +102,7 @@
 
       </div>
 
-      <a href="#"
+      <a href="{% url 'checkout' %}"
          class="block mt-6 w-full text-center bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition">
         Proceed to Checkout
       </a>
@@ -125,7 +113,6 @@
 
   {% else %}
 
-  <!-- Empty Cart -->
   <div class="text-center py-20">
 
     <h2 class="text-xl font-semibold mb-2">
