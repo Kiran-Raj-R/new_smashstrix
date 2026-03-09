@@ -2,10 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.contrib import messages
+from django.utils import timezone
+from django.http import HttpResponse
 from decimal import Decimal
 from cart.models import Cart, CartItem
 from user.models import Address
 from .models import Order, OrderItem
+from .utils import generate_invoice
 
 @login_required(login_url="login")
 def checkout_view(request):
@@ -58,7 +61,7 @@ def place_order(request):
 
     subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
-    shipping = Decimal("50.00") if subtotal > 0 else Decimal("0.00")
+    shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     total = subtotal + tax + shipping
     order = Order.objects.create(user=request.user,address=address,
         subtotal=subtotal,tax=tax,shipping=shipping,
@@ -106,6 +109,15 @@ def order_detail(request, order_id):
     return render(request, "orders/order_detail.html", context)
 
 @login_required(login_url="login")
+def download_invoice(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id, user=request.user)
+    order_items = order.items.all()
+    buffer = generate_invoice(order, order_items)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename=invoice_{order.order_id}.pdf'
+    return response
+
+@login_required(login_url="login")
 @transaction.atomic
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, user=request.user)
@@ -131,3 +143,25 @@ def cancel_order(request, order_id):
 
     return render(request, "orders/cancel_order.html", {"order": order})
 
+@login_required
+def request_item_return(request, item_id):
+    item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
+    if item.order.status != "Delivered":
+        messages.error(request, "Return allowed only for delivered items.")
+        return redirect("order_detail", order_id=item.order.order_id)
+    if item.return_status != "Not Requested":
+        messages.error(request, "Return already requested for this item.")
+        return redirect("order_detail", order_id=item.order.order_id)
+    if request.method == "POST":
+        reason = request.POST.get("reason")
+        if not reason:
+            messages.error(request, "Return reason is required.")
+            return redirect("request_item_return", item_id=item.id)
+
+        item.return_status = "Requested"
+        item.return_reason = reason
+        item.return_requested_at = timezone.now()
+        item.save()
+        messages.success(request, "Return request submitted.")
+        return redirect("order_detail", order_id=item.order.order_id)
+    return render(request, "orders/request_item_return.html", {"item": item})

@@ -1,34 +1,45 @@
-{% extends "base.html" %}
+{% extends "user/profile/base.html" %}
 {% load static %}
 
-{% block content %}
-<div class="container mx-auto py-10">
+{% block dashboard_content %}
 
-  <h2 class="text-2xl font-bold mb-8">My Orders</h2>
+<div class="bg-white rounded-xl shadow p-6">
+
+  <h2 class="text-xl font-semibold mb-6 border-b pb-3">
+    My Orders
+  </h2>
 
   {% if orders %}
+
   <div class="space-y-6">
 
     {% for order in orders %}
-    <div class="bg-white shadow rounded-xl border p-6">
+    <div class="border rounded-xl p-6 hover:shadow-md transition">
 
+      <!-- Top Section -->
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
+        <!-- Order ID -->
         <div>
           <p class="text-sm text-gray-500">Order ID</p>
           <p class="font-semibold">{{ order.order_id }}</p>
         </div>
 
+        <!-- Date -->
         <div>
           <p class="text-sm text-gray-500">Placed On</p>
-          <p class="font-medium">{{ order.created_at|date:"d M Y, h:i A" }}</p>
+          <p class="font-medium">
+            {{ order.created_at|date:"d M Y, h:i A" }}
+          </p>
         </div>
 
+        <!-- Payment -->
         <div>
           <p class="text-sm text-gray-500">Payment</p>
           <p class="font-medium">{{ order.payment_method }}</p>
         </div>
 
+        <!-- Total -->
         <div>
           <p class="text-sm text-gray-500">Total</p>
           <p class="font-semibold text-green-700">
@@ -36,21 +47,43 @@
           </p>
         </div>
 
+        <!-- Dynamic Status -->
         <div>
-          <span class="px-3 py-1 rounded-full text-sm font-medium
-            {% if order.status == 'Pending' %}bg-yellow-100 text-yellow-700
-            {% elif order.status == 'Processing' %}bg-blue-100 text-blue-700
-            {% elif order.status == 'Shipped' %}bg-purple-100 text-purple-700
-            {% elif order.status == 'Delivered' %}bg-green-100 text-green-700
-            {% elif order.status == 'Cancelled' %}bg-red-100 text-red-700
-            {% endif %}
-          ">
-            {{ order.status }}
-          </span>
+
+          {% if order.return_state == "Fully Returned" %}
+              <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+                  Fully Returned
+              </span>
+
+          {% elif order.return_state == "Partially Returned" %}
+              <span class="px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-700">
+                  Partially Returned
+              </span>
+
+          {% elif order.return_state == "Return In Progress" %}
+              <span class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700">
+                  Return In Progress
+              </span>
+
+          {% else %}
+              <span class="px-3 py-1 rounded-full text-sm font-medium
+                {% if order.status == 'Pending' %}bg-yellow-100 text-yellow-700
+                {% elif order.status == 'Processing' %}bg-blue-100 text-blue-700
+                {% elif order.status == 'Shipped' %}bg-purple-100 text-purple-700
+                {% elif order.status == 'Out_for_delivery' %}bg-indigo-100 text-indigo-700
+                {% elif order.status == 'Delivered' %}bg-green-100 text-green-700
+                {% elif order.status == 'Cancelled' %}bg-red-100 text-red-700
+                {% endif %}
+              ">
+                {{ order.status }}
+              </span>
+          {% endif %}
+
         </div>
 
       </div>
 
+      <!-- Actions -->
       <div class="mt-6 flex gap-4">
 
         <a href="{% url 'order_detail' order.order_id %}"
@@ -58,7 +91,7 @@
           View Details
         </a>
 
-        {% if order.status == "pending" or order.status == "processing" %}
+        {% if order.status == "Pending" or order.status == "Processing" %}
         <a href="{% url 'cancel_order' order.order_id %}"
            class="px-4 py-2 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition">
           Cancel Order
@@ -73,14 +106,19 @@
   </div>
 
   {% else %}
-  <div class="bg-white shadow rounded-xl border p-10 text-center">
-    <p class="text-gray-600 mb-4">You have not placed any orders yet.</p>
+
+  <div class="text-center py-12">
+    <p class="text-gray-600 mb-4">
+      You have not placed any orders yet.
+    </p>
     <a href="{% url 'shop' %}"
        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
        Start Shopping
     </a>
   </div>
+
   {% endif %}
 
 </div>
+
 {% endblock %}

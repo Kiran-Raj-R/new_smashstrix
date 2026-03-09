@@ -36,6 +36,20 @@ class Order(models.Model):
 
     def __str__(self):
         return self.order_id
+    
+    @property
+    def return_state(self):
+        items = self.items.all()
+        total = items.count()
+        approved = items.filter(return_status="Approved").count()
+        requested = items.filter(return_status="Requested").count()
+        if approved == total and total > 0:
+            return "Fully Returned"
+        if approved > 0:
+            return "Partially Returned"
+        if requested > 0:
+            return "Return In Progress"
+        return None
 
 class OrderItem(models.Model):
 
@@ -43,6 +57,12 @@ class OrderItem(models.Model):
         ("ordered", "Ordered"),
         ("cancelled", "Cancelled"),
         ("returned", "Returned"),
+    ]
+    RETURN_STATUS_CHOICES = [
+        ("Not Requested", "Not Requested"),
+        ("Requested", "Requested"),
+        ("Approved", "Approved"),
+        ("Rejected", "Rejected"),
     ]
 
     order = models.ForeignKey(Order,on_delete=models.CASCADE,related_name="items")
@@ -54,6 +74,8 @@ class OrderItem(models.Model):
     status = models.CharField(max_length=20,choices=STATUS_CHOICES,default="ordered")
     cancel_reason = models.TextField(blank=True, null=True)
     return_reason = models.TextField(blank=True, null=True)
+    return_status = models.CharField(max_length=20,choices=RETURN_STATUS_CHOICES,default="Not Requested")
+    return_requested_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.product.name} ({self.order.order_id})"
