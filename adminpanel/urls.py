@@ -32,4 +32,7 @@ urlpatterns = [
     path("orders/",views.admin_order_list,name="admin_order_list"),
     path("orders/<str:order_id>/",views.admin_order_detail, name="admin_order_detail"),
     
+    path("returns/",views.admin_return_list,name="admin_return_list"),
+    path("returns/handle/<int:item_id>/",views.admin_handle_return,name="admin_handle_return"),
+    
 ]

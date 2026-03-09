@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
+from django.db import transaction
 from django.db.models import Q,Sum
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
@@ -11,6 +12,7 @@ from products.utils import resize_image
 from PIL import Image
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -327,4 +329,51 @@ def admin_order_detail(request, order_id):
         "order_items": order_items,
     }
     return render(request, "adminpanel/orders/order_detail.html", context)
+
+@never_cache
+@login_required(login_url='admin_login')
+def admin_return_list(request):
+    status_filter = request.GET.get("status")
+    if not status_filter:
+        status_filter = "Requested"
+    search = request.GET.get("search", "")
+    return_items = OrderItem.objects.select_related(
+        "order", "product", "color_variant", "order__user"
+    ).exclude(return_status__isnull=True)
+    if status_filter != "all":
+        return_items = return_items.filter(return_status=status_filter)
+    if search:
+        return_items = return_items.filter(Q(order__order_id__icontains=search) |Q(product__name__icontains=search))
+    return_items = return_items.order_by("-return_requested_at")
+    paginator = Paginator(return_items, 5)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "return_items": page_obj,
+        "status_filter": status_filter,
+        "search": search,
+    }
+    return render(request, "adminpanel/orders/return_list.html", context)
+
+@require_POST
+@transaction.atomic
+def admin_handle_return(request, item_id):
+    action = request.POST.get("action")
+    item = get_object_or_404(OrderItem, id=item_id)
+    if item.return_status != "Requested":
+        messages.error(request, "This return request is already processed.")
+        return redirect("admin_return_list")
+    if action == "approve":
+        if item.color_variant:
+            item.color_variant.stock += item.quantity
+            item.color_variant.save()
+        item.return_status = "Approved"
+        item.save()
+        messages.success(request, "Return approved and stock restored.")
+    elif action == "reject":
+        item.return_status = "Rejected"
+        item.save()
+        messages.success(request, "Return rejected.")
+    return redirect("admin_return_list")
 
