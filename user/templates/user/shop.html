@@ -56,13 +56,13 @@
                             </span>
                         {% endif %}
                     </div>
-
+                    <a href="{% url 'product_detail' product.id %}">
                     <button
                         class="mt-auto w-full py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
                         Add to Cart
                     </button>
-
+                    </a>
                 </div>
                 {% empty %}
                 <div class="col-span-full text-center text-gray-500 py-10">
