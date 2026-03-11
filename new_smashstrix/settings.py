@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'core',
     'cart',
     'orders',
+    'wishlist',
+    
 
     'crispy_forms',
     'rest_framework',
