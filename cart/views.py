@@ -5,6 +5,7 @@ from products.models import Product, ColorVariant
 from .models import CartItem, Cart
 from .utils import get_or_create_cart
 from decimal import Decimal
+from wishlist.models import WishlistItem
 
 MAX_CART_QTY = 5
 
@@ -40,6 +41,7 @@ def add_to_cart(request):
         messages.error(request, f"Maximum {MAX_CART_QTY} items allowed per product.")
         return redirect("product_detail", slug=product.slug)
 
+    WishlistItem.objects.filter(wishlist__user=request.user,product=product, color_variant=variant).delete()
     cart_item.quantity = new_quantity
     cart_item.save()
     messages.success(request, "Product added to cart successfully.")
