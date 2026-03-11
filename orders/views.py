@@ -4,6 +4,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 from decimal import Decimal
 from cart.models import Cart, CartItem
 from user.models import Address
@@ -94,8 +95,15 @@ def order_success(request, order_id):
 
 @login_required(login_url="login")
 def order_list(request):
+    search = request.GET.get("search","")
     orders = Order.objects.filter(user=request.user).order_by("-created_at")
-    return render(request, "orders/order_list.html", {"orders": orders})
+    if search:
+        orders = orders.filter(order_id__icontains = search)
+    paginator = Paginator(orders, 4)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    context = {"orders":page_obj, "search":search}
+    return render(request, "orders/order_list.html", context)
 
 @login_required(login_url="login")
 def order_detail(request, order_id):
