@@ -60,7 +60,6 @@ def shop(request):
     if "page" in query_params:
         del query_params["page"]
     querystring = query_params.urlencode()
-
     context = {
         "products": products,
         "querystring": querystring,
@@ -75,7 +74,6 @@ def shop(request):
         "max_price": max_price,
         "request": request,
     }
-
     return render(request, "user/shop.html", context)
 
 
@@ -86,8 +84,7 @@ def product_detail(request, product_id):
 
 @login_required(login_url="login")
 def user_profile(request):
-    default_address = (
-        Address.objects.filter(user=request.user, is_default=True).first())
+    default_address = (Address.objects.filter(user=request.user, is_default=True).first())
     return render(request, "user/profile/profile.html", {"default_address": default_address})
 
 @login_required(login_url="login")
