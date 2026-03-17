@@ -47,17 +47,13 @@
 
       <div class="flex gap-3">
 
-        <!-- Move to cart -->
-        <form method="POST" action="{% url 'add_to_cart' %}">
-          {% csrf_token %}
-          <input type="hidden" name="product_id" value="{{ item.product.id }}">
-          <input type="hidden" name="variant_id" value="{{ item.color_variant.id }}">
-          <button
-            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
-          >
-            Move to Cart
-          </button>
-        </form>
+        <!-- View Product -->
+        <a href="{% url 'product_detail' item.product.id %}"
+           class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
+
+           View Product
+
+        </a>
 
         <!-- Remove -->
         <a href="{% url 'remove_from_wishlist' item.id %}"
