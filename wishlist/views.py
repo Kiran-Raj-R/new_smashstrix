@@ -37,3 +37,4 @@ def remove_from_wishlist(request, item_id):
     item.delete()
     messages.success(request, "Removed from wishlist")
     return redirect("wishlist")
+
