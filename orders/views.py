@@ -151,6 +151,33 @@ def cancel_order(request, order_id):
 
     return render(request, "orders/cancel_order.html", {"order": order})
 
+@login_required(login_url="login")
+@transaction.atomic
+def cancel_order_item(request, item_id):
+    item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
+    order = item.order
+    if order.status not in ["Pending", "Processing"]:
+        messages.error(request, "Item cannot be cancelled.")
+        return redirect("order_detail", order_id=order.order_id)
+    if item.status == "Cancelled":
+        messages.warning(request, "Item already cancelled.")
+        return redirect("order_detail", order_id=order.order_id)
+    if request.method == "POST":
+        reason = request.POST.get("reason","")
+        if item.color_variant:
+            item.color_variant.stock += item.quantity
+            item.color_variant.save()
+        item.status = "cancelled"
+        item.cancel_reason = reason
+        item.save()
+        remaining_items = order.items.filter(status="ordered").count()
+        if remaining_items == 0:
+            order.status = "cancelled"
+            order.save()
+        messages.success(request,"Item cancelled successfully.")
+        return redirect("order_detail", order_id=order.order_id)
+    return render(request,"orders/cancel_order_item.html",{"item":item})
+
 @login_required
 def request_item_return(request, item_id):
     item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
@@ -165,7 +192,6 @@ def request_item_return(request, item_id):
         if not reason:
             messages.error(request, "Return reason is required.")
             return redirect("request_item_return", item_id=item.id)
-
         item.return_status = "Requested"
         item.return_reason = reason
         item.return_requested_at = timezone.now()
