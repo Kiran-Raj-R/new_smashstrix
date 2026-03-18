@@ -22,10 +22,17 @@ urlpatterns = [
 
     path('products/', views.product_list, name='admin_products'),
     path('products/new/',views.product_add,name='admin_product_add'),
-    path("products/change/<int:pk>/", views.product_edit, name="admin_product_edit"),
+    path("products/change/<int:product_id>/", views.product_edit, name="admin_product_edit"),
     path('products/delete/<int:pk>/', views.product_delete, name='admin_product_delete'),
     
     path("products/image/delete/<int:img_id>/", views.product_image_delete,name="admin_product_image_delete"),
     path("products/<int:product_id>/color/new/", views.color_variant_add,name="admin_color_variant_add"),
-    path("products/color/delete/<int:pk>/", views.color_variant_delete,name="admin_color_variant_delete"),
+    path("products/color/delete/<int:variant_id>/", views.color_variant_delete,name="admin_color_variant_delete"),
+
+    path("orders/",views.admin_order_list,name="admin_order_list"),
+    path("orders/<str:order_id>/",views.admin_order_detail, name="admin_order_detail"),
+    
+    path("returns/",views.admin_return_list,name="admin_return_list"),
+    path("returns/handle/<int:item_id>/",views.admin_handle_return,name="admin_handle_return"),
+    
 ]

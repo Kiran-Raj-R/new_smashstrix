@@ -1,0 +1,41 @@
+{% extends "user/profile/base.html" %}
+
+{% block dashboard_content %}
+
+<div class="bg-white rounded-xl shadow p-6 max-w-2xl">
+
+  <h2 class="text-xl font-semibold mb-6 border-b pb-3">
+    Return Item — {{ item.product.name }}
+  </h2>
+
+  <form method="POST" class="space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-medium mb-2">
+        Reason for Return *
+      </label>
+
+      <textarea name="reason"
+                rows="4"
+                required
+                class="w-full border rounded px-3 py-2"></textarea>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit"
+              class="bg-red-600 text-white px-6 py-2 rounded">
+        Submit Return Request
+      </button>
+
+      <a href="{% url 'order_detail' item.order.order_id %}"
+         class="border px-6 py-2 rounded">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+
+</div>
+
+{% endblock %}

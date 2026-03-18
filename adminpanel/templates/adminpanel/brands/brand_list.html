@@ -48,10 +48,7 @@
 
       <td class="p-3 flex gap-3">
         <a href="{% url 'admin_brand_edit' brand.id %}" class="text-blue-600 hover:underline">Edit</a>
-        <a href="{% url 'admin_brand_delete' brand.id %}" class="text-red-600 hover:underline"
-           onclick="return confirm('Are you sure?')">
-           Delete
-        </a>
+        <a href="#" class="text-red-600 hover:underline"onclick="confirmDelete('{% url 'admin_brand_delete' brand.id %}')">Delete</a>
       </td>
     </tr>
     {% endfor %}

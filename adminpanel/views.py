@@ -1,23 +1,25 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
-from django.db import IntegrityError
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Q,Sum
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
+from orders.models import Order, OrderItem
 from django.core.paginator import Paginator
-from products.forms import BrandForm,CategoryForm,ProductForm,ProductImageForm,ColorVariantForm
+from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
-from PIL import Image   
+from PIL import Image
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
         return redirect('admin_dashboard')
-
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-
         user = authenticate(request,email=email,password=password)
         if user is not None and user.is_staff:
             login(request,user)
@@ -26,10 +28,8 @@ def admin_login(request):
             messages.error(request,"Invalid credentials or no admin access.")
     return render(request,'adminpanel/admin_login.html') 
 
-def admin_logout(request):
-    logout(request)
-    return redirect('admin_login')
-
+@never_cache
+@login_required(login_url='admin_login')
 def admin_dashboard(request):
     context = {
         "total_users": User.objects.count(),
@@ -41,14 +41,14 @@ def admin_dashboard(request):
     }
     return render(request,'adminpanel/dashboard.html',context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def admin_user_list(request):
     search = request.GET.get("search", "")
-
     users = User.objects.filter(email__icontains=search).exclude(email__icontains='admin').order_by("-date_joined")
     paginator = Paginator(users, 8)
     page_number = request.GET.get("page")
     users_page = paginator.get_page(page_number)
-
     return render(request, 'adminpanel/users/user_list.html', {"users": users_page,"search": search,})
 
 def block_user(request, user_id):
@@ -65,19 +65,18 @@ def unblock_user(request, user_id):
     messages.success(request, f"{user.first_name} has been unblocked.")
     return redirect('admin_users')
 
+@never_cache
+@login_required(login_url='admin_login')
 def brand_list(request):
     search = request.GET.get('search','')
     brands = Brand.objects.filter(name__icontains=search).order_by('-created_at')
-
     paginator = Paginator(brands,6)
     page = request.GET.get('page')
     brands_page = paginator.get_page(page)
-
     context = {
         'brands':brands_page,
         'search':search,
     }
-
     return render(request,'adminpanel/brands/brand_list.html',context)
 
 def brand_add(request):
@@ -88,8 +87,7 @@ def brand_add(request):
             messages.success(request,"Brand added Successfully.")
             return redirect('admin_brands')
     else:
-        form = BrandForm()
-    
+        form = BrandForm()   
     return render(request, 'adminpanel/brands/brand_form.html', {'form':form})
 
 def brand_edit(request,pk):
@@ -101,8 +99,7 @@ def brand_edit(request,pk):
             messages.success(request,"Brand editted Successfully.")
             return redirect('admin_brands')
     else:
-        form = BrandForm(instance=brand)
-    
+        form = BrandForm(instance=brand)    
     return render(request,'adminpanel/brands/brand_form.html',{'form':form})
 
 def brand_delete(request,pk):
@@ -112,14 +109,14 @@ def brand_delete(request,pk):
     messages.success(request,"Brand deleted Successfully.")
     return redirect('admin_brands')
 
+@never_cache
+@login_required(login_url='admin_login')
 def category_list(request):
     search = request.GET.get('search',"")
     categories = Category.objects.filter(name__icontains=search).order_by('-created_at')
-
     paginator = Paginator(categories,5)
     page_num = request.GET.get('page')
     page_obj = paginator.get_page(page_num)
-
     context = {
         'categories':page_obj,
         'search':search
@@ -135,22 +132,18 @@ def category_add(request):
             return redirect('admin_categories')
     else:
         form = CategoryForm()
-
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
 def category_edit(request,pk):
     category = Category.objects.get(id=pk)
-
     if request.method == 'POST':
         form = CategoryForm(request.POST,request.FILES,instance=category)
         if form.is_valid():
             form.save()
             messages.success(request,"Category editted Successfully.")
-            return redirect('admin_categories')
-    
+            return redirect('admin_categories')    
     else:
-        form = CategoryForm(instance=category)
-    
+        form = CategoryForm(instance=category)    
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
 def category_delete(request,pk):
@@ -161,98 +154,90 @@ def category_delete(request,pk):
     return redirect('admin_categories')
 
 def product_add(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ProductForm(request.POST)
-        image_form = ProductImageForm(request.POST, request.FILES)        
-        if form.is_valid() and image_form.is_valid():
-            images = request.FILES.getlist("images")          
-            if len(images) < 3:
-                messages.error(request, "Upload at least 3 images.")
-                return redirect("admin_product_add")
+        images = request.FILES.getlist("images")
+        print("FILES RECEIVED:", request.FILES)
+        print("IMAGES LIST:", images)
+        if len(images) < 3:
+            return render(request, "adminpanel/products/product_form.html", {
+                "form": form,
+                "image_errors": "Please upload at least 3 images.",
+                "product": None,
+            })
+        if form.is_valid():
             product = form.save()
-            for image in images:
-                img_obj = ProductImage.objects.create(product=product, image=image)
+            for img in images:
+                img_obj = ProductImage.objects.create(product=product,image=img)
                 resize_image(img_obj.image.path)
-            messages.success(request, "Product added successfully.")
-            return redirect("admin_products")
+            messages.success(request, "Product added. Add color variants.")
+            return redirect("admin_color_variant_add", product.id)
+        messages.error(request, "Please fix the errors in the form.")
     else:
         form = ProductForm()
-        image_form = ProductImageForm()
-
-    context = {
+    return render(request, "adminpanel/products/product_form.html", {
         "form": form,
-        "image_form": image_form,
-    }
-    return render(request, "adminpanel/products/product_form.html", context)
+        "product": None,
+    })
 
 def color_variant_add(request, product_id):
-    product = Product.objects.get(id=product_id)
-
+    product = get_object_or_404(Product, id=product_id)
     if request.method == "POST":
         form = ColorVariantForm(request.POST)
         if form.is_valid():
             variant = form.save(commit=False)
             variant.product = product
-            try:
-                variant.save()
-                messages.success(request, "Color variant added.")
-            except IntegrityError:
-                messages.error(request, "This color already exists for this product.")
-            return redirect("admin_product_edit", product_id)
+            variant.save()
+            product.stock = sum(v.stock for v in product.colors.all())
+            product.save()
+            messages.success(request, "Color variant added.")
+            return redirect("admin_color_variant_add", product.id)
+        messages.error(request, "Please fix the errors.")
     else:
         form = ColorVariantForm()
+    variants = product.colors.all()
+    return render(request, "adminpanel/products/color_variant_form.html", {
+        "form": form,
+        "product": product,
+        "variants": variants,
+    })
 
-    return render(request, "adminpanel/products/color_variant_form.html", {"form": form})
-
-def color_variant_delete(request, pk):
-    variant = ColorVariant.objects.get(id=pk)
-    product_id = variant.product.id
+def color_variant_delete(request, variant_id):
+    variant = get_object_or_404(ColorVariant, id=variant_id)
+    product = variant.product
     variant.delete()
-    messages.success(request,"Color variant deleted.")
-    return redirect("admin_product_edit", product_id)
+    product.stock = sum(v.stock for v in product.colors.all())
+    product.save()
+    messages.success(request, "Color variant deleted.")
+    return redirect("admin_color_variant_add", product.id)
 
-def product_edit(request, pk):
-    product = get_object_or_404(Product, id=pk)
+def product_edit(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
     if request.method == "POST":
         form = ProductForm(request.POST, instance=product)
-        image_form = ProductImageForm(request.POST, request.FILES)
-        if form.is_valid() and image_form.is_valid():
+        if form.is_valid():
             form.save()
-            new_images = request.FILES.getlist("images")
-            for img in new_images:
-                img_obj = ProductImage.objects.create(product=product, image=img)
-                resize_image(img_obj.image.path)
-            messages.success(request, "Product updated successfully.")
+            messages.success(request, "Product updated.")
             return redirect("admin_products")
-        else:
-            messages.error(request, "Please fix form errors.")
+        messages.error(request, "Please fix the errors.")
     else:
         form = ProductForm(instance=product)
-        image_form = ProductImageForm()
-
-    context = {
+    images = ProductImage.objects.filter(product=product)
+    return render(request, "adminpanel/products/product_form.html", {
         "form": form,
-        "image_form": image_form,
         "product": product,
-        "images": product.images.all(),
-        "variants": product.colors.all(),
-    }
-    return render(request, "adminpanel/products/product_form.html", context)
+        "images": images,
+    })
 
-def image_resize(image_path):
-    img = Image.open(image_path)
-    img = img.convert("RGB")
-    img = img.resize((800, 800))
-    img.save(image_path)
-
+@never_cache
+@login_required(login_url='admin_login')
 def product_list(request):
     search = request.GET.get("search", "")
-    products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)|
-                                      Q(category__name__icontains=search),active=True).order_by("-created_at")
+    products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)
+                                      |Q(category__name__icontains=search),).annotate(total_stock=Sum("colors__stock")).order_by("-created_at")
     paginator = Paginator(products, 6)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-
     context = {
         "products": page_obj,
         "search": search,
@@ -263,7 +248,6 @@ def product_delete(request, pk):
     product = Product.objects.get(id=pk)
     product.active = False
     product.save()
-
     messages.success(request, "Product removed successfully.")
     return redirect("admin_products")
 
@@ -275,19 +259,121 @@ def crop_center(image, crop_width, crop_height):
     bottom = (height + crop_height) // 2
     return image.crop((left, top, right, bottom))
 
-def resize_image(image_path, size=(800, 800)):
-    img = Image.open(image_path)
-    img = img.convert("RGB")
-    min_dim = min(img.size)
-    img = crop_center(img, min_dim, min_dim)
-    img = img.resize(size)
-    img.save(image_path, optimize=True, quality=85)
-
 def product_image_delete(request, img_id):
-    img = ProductImage.objects.get(id=img_id)
+    img = get_object_or_404(ProductImage, id=img_id)
     product_id = img.product.id
     img.delete()
-
     messages.success(request, "Image removed.")
     return redirect("admin_product_edit", product_id)
+
+@never_cache
+def admin_logout(request):
+    logout(request)
+    request.session.flush()
+    return redirect('admin_login')
+
+@never_cache
+@login_required(login_url='admin_login')
+def admin_order_list(request):
+    orders = Order.objects.all().order_by("-created_at")
+    search = request.GET.get("search")
+    status = request.GET.get("status")
+    if search:
+        orders = orders.filter(Q(order_id__icontains=search) |Q(user__email__icontains=search))
+    if status:
+        orders = orders.filter(status=status)
+    paginator = Paginator(orders, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+        "search": search,
+        "status": status,
+    }
+    return render(request, "adminpanel/orders/order_list.html", context)
+
+def admin_order_detail(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)
+    order_items = order.items.all()
+    if request.method == "POST":
+
+        new_status = request.POST.get("status")
+        if order.status in ["Delivered", "Cancelled"]:
+            messages.error(request, "Finalized orders cannot be modified.")
+            return redirect("admin_order_detail", order_id=order.order_id)
+
+        valid_transitions = {
+            "pending": ["Processing", "Cancelled"],
+            "Processing": ["Shipped", "Cancelled"],
+            "Shipped": ["Out for Delivery"],
+            "Out for Delivery": ["Delivered"],
+        }
+        allowed_statuses = valid_transitions.get(order.status, [])
+        if new_status not in allowed_statuses:
+            messages.error(request, "Invalid status transition.")
+            return redirect("admin_order_detail", order_id=order.order_id)
+        
+        if new_status == "Cancelled":
+            for item in order_items:
+                if item.color_variant:
+                    item.color_variant.stock += item.quantity
+                    item.color_variant.save()
+        order.status = new_status
+        order.save()
+        messages.success(request, "Order status updated successfully.")
+        return redirect("admin_order_detail", order_id=order.order_id)
+
+    context = {
+        "order": order,
+        "order_items": order_items,
+    }
+    return render(request, "adminpanel/orders/order_detail.html", context)
+
+@never_cache
+@login_required(login_url='admin_login')
+def admin_return_list(request):
+    status_filter = request.GET.get("status")
+    if not status_filter:
+        status_filter = "Requested"
+    search = request.GET.get("search", "")
+    return_items = OrderItem.objects.select_related(
+        "order", "product", "color_variant", "order__user"
+    ).exclude(return_status__isnull=True)
+    if status_filter != "all":
+        return_items = return_items.filter(return_status=status_filter)
+    if search:
+        return_items = return_items.filter(Q(order__order_id__icontains=search) |Q(product__name__icontains=search))
+    return_items = return_items.order_by("-return_requested_at")
+    paginator = Paginator(return_items, 5)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "return_items": page_obj,
+        "status_filter": status_filter,
+        "search": search,
+    }
+    return render(request, "adminpanel/orders/return_list.html", context)
+
+@require_POST
+@transaction.atomic
+def admin_handle_return(request, item_id):
+    action = request.POST.get("action")
+    item = get_object_or_404(OrderItem, id=item_id)
+    if item.return_status != "Requested":
+        messages.error(request, "This return request is already processed.")
+        return redirect("admin_return_list")
+    if action == "approve":
+        if item.color_variant:
+            item.color_variant.stock += item.quantity
+            item.color_variant.save()
+        item.return_status = "Approved"
+        item.save()
+        messages.success(request, "Return approved and stock restored.")
+    elif action == "reject":
+        item.return_status = "Rejected"
+        item.save()
+        messages.success(request, "Return rejected.")
+    return redirect("admin_return_list")
 

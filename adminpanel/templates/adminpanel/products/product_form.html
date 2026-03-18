@@ -1,87 +1,107 @@
-{% extends 'adminpanel/base_admin.html' %}
-{% block title %}Product Form{% endblock %}
+{% extends "adminpanel/base_admin.html" %}
+{% load static %}
 
 {% block content %}
-<h2 class="text-2xl font-bold mb-6">
-  {% if form.instance.id %} Edit Product {% else %} Add Product {% endif %}
+
+<h2 class="text-2xl font-semibold mb-4">
+  {% if product %}Edit Product{% else %}Add Product{% endif %}
 </h2>
 
 <form method="POST" enctype="multipart/form-data"
-      class="bg-white p-6 rounded shadow max-w-3xl">
-  {% csrf_token %}
+      class="bg-white p-6 rounded-lg shadow max-w-3xl space-y-6">
 
-  <div class="grid grid-cols-2 gap-4">
-    <div>{{ form.name.label_tag }} {{ form.name }}</div>
-    <div>{{ form.brand.label_tag }} {{ form.brand }}</div>
-    <div>{{ form.category.label_tag }} {{ form.category }}</div>
-    <div>{{ form.price.label_tag }} {{ form.price }}</div>
-    <div>{{ form.discount_price.label_tag }} {{ form.discount_price }}</div>
-  </div>
+    {% csrf_token %}
 
-  <div class="mt-4">
-    {{ form.description.label_tag }}
-    {{ form.description }}
-  </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-  <div class="mt-6">
-    <label class="font-semibold block mb-2">Upload Product Images (Upload at least 3 for new product)</label>
-    <input type="file" name="images" multiple class="border p-2 rounded w-full bg-white">
-  </div>
+        <div>
+            <label for="id_name">Name:</label>
+            {{ form.name }}
+            {% for error in form.name.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
 
-  {% if product %}
-  <h3 class="text-lg font-semibold mt-6 mb-2">Existing Images</h3>
-  <div class="grid grid-cols-4 gap-4">
-    {% for img in images %}
-      <div class="relative group">
-        <img src="{{ img.image.url }}" class="h-32 w-full object-cover rounded shadow">
-        <a href="{% url 'admin_product_image_delete' img.id %}"
-           onclick="return confirm('Delete this image?')"
-           class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition">
-            Delete
-        </a>
-      </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+        <div>
+            <label for="id_brand">Brand:</label>
+            {{ form.brand }}
+            {% for error in form.brand.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
 
-  <button class="bg-blue-700 text-white px-4 py-2 rounded mt-6 hover:bg-blue-800">
-    Save Product
-  </button>
+        <div>
+            <label for="id_category">Category:</label>
+            {{ form.category }}
+            {% for error in form.category.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div>
+            <label for="id_price">Price:</label>
+            {{ form.price }}
+            {% for error in form.price.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div>
+            <label for="id_discount_price">Discount Price:</label>
+            {{ form.discount_price }}
+            {% for error in form.discount_price.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <div>
+        <label for="id_description">Description:</label>
+        {{ form.description }}
+        {% for error in form.description.errors %}
+            <p class="text-red-600 text-sm">{{ error }}</p>
+        {% endfor %}
+    </div>
+
+    <div class="flex items-center gap-2 mt-3">
+        <label for="id_active" class="font-semibold">Active:</label>
+        {{ form.active }}
+        {% if form.active.errors %}
+            <p class="text-red-600 text-sm">{{ form.active.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <div>
+        <label class="font-semibold block mb-2">Upload Product Images (Minimum 3 Images)</label>
+        <input type="file" name="images" id="id_images" multiple required accept="image/*"
+               class="border p-2 rounded w-full bg-white">
+
+        {% if image_errors %}
+            <p class="text-red-600 text-sm mt-1">{{ image_errors }}</p>
+        {% endif %}
+    </div>
+
+    {% if images %}
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {% for img in images %}
+            <div class="relative group">
+                <img src="{{ img.image.url }}" class="h-32 w-full object-cover rounded shadow">
+                <a href="{% url 'admin_product_image_delete' img.id %}"
+                   class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded opacity-0 
+                   group-hover:opacity-100 transition">
+                   Delete
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <button type="submit"
+            class="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 shadow">
+        {% if product %}Update Product{% else %}Save Product{% endif %}
+    </button>
+
 </form>
-
-{% if product %}
-<div class="mt-12">
-  <div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-bold">Color Variants</h3>
-    <a href="{% url 'admin_add_color_variant' product.id %}"
-       class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition">
-       Add Color Variant
-    </a>
-  </div>
-  <table class="w-full bg-white shadow rounded">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-3">Color</th>
-        <th class="p-3">Stock</th>
-        <th class="p-3">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for variant in variants %}
-      <tr class="border-b">
-        <td class="p-3 capitalize">{{ variant.get_color_display }}</td>
-        <td class="p-3">{{ variant.stock }}</td>
-        <td class="p-3">
-          <a href="{% url 'admin_delete_color_variant' variant.id %}" onclick="return confirm('Delete this color variant?')"
-             class="text-red-600 hover:underline">Delete</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="3" class="p-3 text-center">No variants added yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 
 {% endblock %}

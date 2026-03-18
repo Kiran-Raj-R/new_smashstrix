@@ -8,12 +8,14 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
+    pending_email = models.EmailField(null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     blocked = models.BooleanField(default=False)
     otp = models.CharField(max_length=6,null=True,blank=True)
     otp_created = models.DateTimeField(null=True,blank=True)
     otp_verified = models.BooleanField(default=False)
     mobile = models.CharField(max_length=10,unique=True,blank=True,null=True)
+    profile_image = models.ImageField(upload_to="profiles/", null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -22,6 +24,6 @@ class User(AbstractUser):
         if not self.otp_created:
             return True
         return timezone.now() > self.otp_created + timedelta(minutes=5)
-
+    
     def __str__(self):
         return f'{self.first_name} {self.last_name}'.strip()
