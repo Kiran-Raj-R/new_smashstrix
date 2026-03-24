@@ -13,7 +13,6 @@ MAX_CART_QTY = 5
 def add_to_cart(request):
     if request.method != "POST":
         return redirect("shop")
-
     product_id = request.POST.get("product_id")
     variant_id = request.POST.get("variant_id")
     try:
@@ -47,45 +46,98 @@ def add_to_cart(request):
     messages.success(request, "Product added to cart successfully.")
     return redirect("cart_detail")
 
-@login_required(login_url="login")
-def increment_cart_item(request, item_id):
+# @login_required(login_url="login")
+# def increment_cart_item(request, item_id):
+#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
+
+#     if not cart_item.product.active or \
+#        not cart_item.product.brand.active or \
+#        not cart_item.product.category.active:
+#         messages.error(request, "This product is no longer available.")
+#         cart_item.delete()
+#         return redirect("cart_detail")
+
+#     if cart_item.color_variant:
+#         if cart_item.quantity + 1 > cart_item.color_variant.stock:
+#             messages.error(request, "No more stock available.")
+#             return redirect("cart_detail")
+
+#     if cart_item.quantity + 1 > MAX_CART_QTY:
+#         messages.error(request, "Maximum quantity reached.")
+#         return redirect("cart_detail")
+#     cart_item.quantity += 1
+#     cart_item.save()
+#     return redirect("cart_detail")
+
+# @login_required(login_url="login")
+# def decrement_cart_item(request, item_id):
+#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
+#     if cart_item.quantity <= 1:
+#         cart_item.delete()
+#     else:
+#         cart_item.quantity -= 1
+#         cart_item.save()
+#     return redirect("cart_detail")
+
+# @login_required(login_url="login")
+# def remove_from_cart(request, item_id):
+#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
+#     cart_item.delete()
+#     messages.success(request, "Item removed from cart.")
+#     return redirect("cart_detail")
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@require_POST
+@login_required
+def update_cart_item(request):
+    item_id = request.POST.get("item_id")
+    action = request.POST.get("action")
     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
 
     if not cart_item.product.active or \
        not cart_item.product.brand.active or \
        not cart_item.product.category.active:
-        messages.error(request, "This product is no longer available.")
-        cart_item.delete()
-        return redirect("cart_detail")
+        return JsonResponse({"error": "Product not available"}, status=400)
 
-    if cart_item.color_variant:
-        if cart_item.quantity + 1 > cart_item.color_variant.stock:
-            messages.error(request, "No more stock available.")
-            return redirect("cart_detail")
+    if action == "increase":
+        if cart_item.quantity >= MAX_CART_QTY:
+            return JsonResponse({"error": f"Maximum {MAX_CART_QTY} items allowed"})
+        if cart_item.color_variant and cart_item.quantity >= cart_item.color_variant.stock:
+            return JsonResponse({"error": "No more stock available"})
+        cart_item.quantity += 1
 
-    if cart_item.quantity + 1 > MAX_CART_QTY:
-        messages.error(request, "Maximum quantity reached.")
-        return redirect("cart_detail")
-    cart_item.quantity += 1
-    cart_item.save()
-    return redirect("cart_detail")
-
-@login_required(login_url="login")
-def decrement_cart_item(request, item_id):
-    cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
-    if cart_item.quantity <= 1:
-        cart_item.delete()
-    else:
+    elif action == "decrease":
+        if cart_item.quantity <= 1:
+            return JsonResponse({"error": "Minimum quantity is 1"})
         cart_item.quantity -= 1
-        cart_item.save()
-    return redirect("cart_detail")
+    cart_item.save()
+    price = cart_item.product.discount_price or cart_item.product.price
+    item_total = price * cart_item.quantity
+    cart = cart_item.cart
+    cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+    return JsonResponse({
+        "quantity": cart_item.quantity,
+        "item_total": float(item_total),
+        "cart_total": float(cart_total)
+    })
 
-@login_required(login_url="login")
-def remove_from_cart(request, item_id):
+@require_POST
+@login_required
+def remove_cart_item(request):
+    item_id = request.POST.get("item_id")
     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
+    cart = cart_item.cart
     cart_item.delete()
-    messages.success(request, "Item removed from cart.")
-    return redirect("cart_detail")
+    remaining_items = cart.items.count()
+    cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+
+    return JsonResponse({
+        "cart_total": float(cart_total),
+        "empty": remaining_items == 0,
+        "message": "Item removed from cart"
+    })
 
 @login_required(login_url="login")
 def cart_detail(request):
