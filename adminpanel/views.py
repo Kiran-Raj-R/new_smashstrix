@@ -282,7 +282,7 @@ def admin_order_list(request):
         orders = orders.filter(Q(order_id__icontains=search) |Q(user__email__icontains=search))
     if status:
         orders = orders.filter(status=status)
-    paginator = Paginator(orders, 10)
+    paginator = Paginator(orders, 6)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -376,4 +376,4 @@ def admin_handle_return(request, item_id):
         item.save()
         messages.success(request, "Return rejected.")
     return redirect("admin_return_list")
-
+    
