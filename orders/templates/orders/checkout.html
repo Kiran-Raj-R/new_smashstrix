@@ -6,22 +6,25 @@
 
   <h2 class="text-2xl font-bold mb-8">Checkout</h2>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <form method="POST" action="{% url 'place_order' %}">
+    {% csrf_token %}
 
-    <!-- LEFT SIDE -->
-    <div class="lg:col-span-2 space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      <div class="bg-white p-6 rounded-xl shadow border">
-        <h3 class="text-lg font-semibold mb-4">Select Delivery Address</h3>
+      <!-- LEFT SIDE -->
+      <div class="lg:col-span-2 space-y-8">
 
-        {% if addresses %}
-        <form method="POST" action="{% url 'place_order' %}">
-          {% csrf_token %}
+        <!-- ADDRESS -->
+        <div class="bg-white p-6 rounded-xl shadow border">
+          <h3 class="text-lg font-semibold mb-4">Select Delivery Address</h3>
 
+          {% if addresses %}
           <div class="space-y-4">
+
             {% for address in addresses %}
             <label class="block border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
               <div class="flex items-start gap-3">
+
                 <input type="radio"
                        name="address_id"
                        value="{{ address.id }}"
@@ -41,9 +44,11 @@
                     Phone: {{ address.phone }}
                   </p>
                 </div>
+
               </div>
             </label>
             {% endfor %}
+
           </div>
 
           <div class="mt-4">
@@ -52,128 +57,209 @@
                + Add New Address
             </a>
           </div>
-            <div class="mt-10">
-            <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
 
-            <div class="space-y-4">
-                <div class="flex items-center justify-between border rounded-lg p-4 bg-green-50 border-green-400">
-                <div>
-                    <p class="font-semibold text-green-700">Cash on Delivery (COD)</p>
-                    <p class="text-sm text-gray-600">
-                    Pay when your order is delivered to your doorstep.
-                    </p>
-                </div>
+          {% else %}
+            <p>No address found</p>
+          {% endif %}
+        </div>
 
-                <span class="text-sm font-medium text-green-700">
-                    Available
-                </span>
-                </div>
-                <div class="flex items-center justify-between border rounded-lg p-4 opacity-50 cursor-not-allowed">
-                <div>
-                    <p class="font-semibold">Online Payment</p>
-                    <p class="text-sm text-gray-600">
-                    Credit/Debit Card, UPI, Netbanking
-                    </p>
-                </div>
 
-                <span class="text-sm font-medium text-gray-500">
-                    Coming Soon
-                </span>
-                </div>
+        <!-- PAYMENT -->
+        <div class="bg-white p-6 rounded-xl shadow border">
+          <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
 
-            </div>
-            </div>
+          <label class="flex items-center gap-3 border p-4 rounded-lg">
+            <input type="radio" name="payment_method" value="COD" checked>
+            <span>Cash on Delivery</span>
+          </label>
 
-          <div class="mt-10">
-            <h3 class="text-lg font-semibold mb-4">Order Items</h3>
-
-            <div class="space-y-4">
-              {% for item in cart_items %}
-              <div class="flex items-center justify-between border rounded-lg p-4">
-
-                <div class="flex items-center gap-4">
-                  {% if item.product.images.first %}
-                  <img src="{{ item.product.images.first.image.url }}"
-                       class="w-16 h-16 object-cover rounded">
-                  {% endif %}
-
-                  <div>
-                    <p class="font-semibold">{{ item.product.name }}</p>
-                    <p class="text-sm text-gray-600">
-                      Color: {{ item.color_variant.color }}
-                    </p>
-                    <p class="text-sm text-gray-600">
-                      Qty: {{ item.quantity }}
-                    </p>
-                  </div>
-                </div>
-
-                <p class="font-semibold text-green-700">
-                  ₹{{ item.product.discount_price|default:item.product.price }}
-                </p>
-
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="lg:hidden mt-10">
-            <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
-          </div>
-
-        {% else %}
-          <p class="text-gray-600">No saved addresses found.</p>
-          <a href="{% url 'address_add' %}"
-             class="text-blue-600 hover:underline">
-             Add Address
-          </a>
-        {% endif %}
-
-      </div>
-    </div>
-
-    <div>
-      <div class="bg-white p-6 rounded-xl shadow border sticky top-6">
-
-        <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
-
-        <div class="space-y-3 text-sm">
-
-          <div class="flex justify-between">
-            <span>Subtotal</span>
-            <span>₹{{ subtotal }}</span>
-          </div>
-
-          <div class="flex justify-between">
-            <span>Tax (5%)</span>
-            <span>₹{{ tax|floatformat:2 }}</span>
-          </div>
-
-          <div class="flex justify-between">
-            <span>Shipping</span>
-            <span>₹{{ shipping }}</span>
-          </div>
-
-          <hr>
-
-          <div class="flex justify-between font-bold text-lg">
-            <span>Total</span>
-            <span class="text-green-700">₹{{ total|floatformat:2 }}</span>
-          </div>
+          <label class="flex items-center gap-3 border p-4 rounded-lg mt-3 opacity-50">
+            <input type="radio" name="payment_method" value="RAZORPAY" disabled>
+            <span>Online Payment (Coming Soon)</span>
+          </label>
 
         </div>
 
-        {% if addresses %}
-        <button type="submit"
-                class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg
-                    hover:bg-green-700 transition font-semibold">
-        Place Order
-        </button>
-        {% endif %}
+
+        <!-- ORDER ITEMS -->
+        <div class="bg-white p-6 rounded-xl shadow border">
+          <h3 class="text-lg font-semibold mb-4">Order Items</h3>
+
+          <div class="space-y-4">
+
+            {% for item in cart_items %}
+            <div class="flex items-center justify-between border rounded-lg p-4">
+
+              <div class="flex items-center gap-4">
+
+                {% if item.product.images.first %}
+                <img src="{{ item.product.images.first.image.url }}"
+                     class="w-16 h-16 object-cover rounded">
+                {% endif %}
+
+                <div>
+                  <p class="font-semibold">{{ item.product.name }}</p>
+                  <p class="text-sm text-gray-600">
+                    Color: {{ item.color_variant.color }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    Qty: {{ item.quantity }}
+                  </p>
+                </div>
+
+              </div>
+
+              <p class="font-semibold text-green-700">
+                ₹{{ item.product.discount_price|default:item.product.price }}
+              </p>
+
+            </div>
+            {% endfor %}
+
+          </div>
+        </div>
 
       </div>
-    </div>
 
-  </div>
+
+      <!-- RIGHT SIDE -->
+      <div>
+
+        <div class="bg-white p-6 rounded-xl shadow border sticky top-6">
+
+          <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+
+          <div class="space-y-3 text-sm">
+
+            <div class="flex justify-between">
+              <span>Subtotal</span>
+              <span>₹{{ subtotal|floatformat:2 }}</span>
+            </div>
+
+            <div class="flex justify-between">
+              <span>Tax</span>
+              <span>₹{{ tax|floatformat:2 }}</span>
+            </div>
+
+            <div class="flex justify-between">
+              <span>Shipping</span>
+              <span>₹{{ shipping|floatformat:2 }}</span>
+            </div>
+
+            <!-- COUPON -->
+            <div class="border p-3 rounded mt-4">
+
+              <div class="flex gap-2">
+                <input type="text" id="coupon-code"
+                       placeholder="Enter coupon"
+                       class="border px-2 py-1 rounded w-full text-sm">
+
+                <button type="button"
+                        onclick="applyCoupon()"
+                        class="bg-black text-white px-3 rounded text-sm">
+                  Apply
+                </button>
+              </div>
+
+              <p id="coupon-msg" class="text-xs mt-2"></p>
+
+              <button type="button"
+                      id="remove-coupon-btn"
+                      onclick="removeCoupon()"
+                      class="text-red-600 text-xs mt-1 hidden">
+                Remove Coupon
+              </button>
+
+            </div>
+
+            <div class="flex justify-between text-green-600">
+              <span>Discount</span>
+              <span id="discount">₹0</span>
+            </div>
+
+            <hr>
+
+            <div class="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span id="grand-total">₹{{ total|floatformat:2 }}</span>
+            </div>
+
+          </div>
+
+          {% if addresses %}
+          <button type="submit"
+                  class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">
+            Place Order
+          </button>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+    </div>
+  </form>
 </div>
+
+
+<!-- JS -->
+<script>
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function applyCoupon() {
+
+    const code = document.getElementById("coupon-code").value;
+
+    fetch("/coupons/apply/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken(),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `code=${code}`
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        const msg = document.getElementById("coupon-msg");
+
+        if (data.error) {
+            msg.innerText = data.error;
+            msg.className = "text-red-600";
+        } else {
+            msg.innerText = "Coupon applied!";
+            msg.className = "text-green-600";
+
+            document.getElementById("discount").innerText = "-₹" + data.discount;
+            document.getElementById("grand-total").innerText = "₹" + data.final_total;
+
+            document.getElementById("remove-coupon-btn").classList.remove("hidden");
+        }
+    });
+}
+
+function removeCoupon() {
+
+    fetch("/coupons/remove/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken()
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("coupon-msg").innerText = "";
+        document.getElementById("discount").innerText = "₹0";
+        document.getElementById("remove-coupon-btn").classList.add("hidden");
+
+        location.reload();
+    });
+}
+
+</script>
+
 {% endblock %}
