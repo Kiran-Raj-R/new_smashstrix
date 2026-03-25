@@ -62,7 +62,7 @@
           <td class="p-4">{{ order.user.email }}</td>
           <td class="p-4">{{ order.created_at|date:"d M Y" }}</td>
           <td class="p-4">{{ order.status }}</td>
-          <td class="p-4">₹{{ order.total_amount }}</td>
+          <td class="p-4">₹ {{ order.total }}</td>
 
           <td class="p-4">
             <a href="{% url 'admin_order_detail' order.order_id %}"

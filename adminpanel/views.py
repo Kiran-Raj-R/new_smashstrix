@@ -6,6 +6,7 @@ from django.db.models import Q,Sum
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from orders.models import Order, OrderItem
+from coupons.models import Coupon
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
@@ -293,6 +294,8 @@ def admin_order_list(request):
     }
     return render(request, "adminpanel/orders/order_list.html", context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
     order_items = order.items.all()
@@ -356,6 +359,8 @@ def admin_return_list(request):
     }
     return render(request, "adminpanel/orders/return_list.html", context)
 
+@never_cache
+@login_required(login_url='admin_login')
 @require_POST
 @transaction.atomic
 def admin_handle_return(request, item_id):
@@ -376,4 +381,75 @@ def admin_handle_return(request, item_id):
         item.save()
         messages.success(request, "Return rejected.")
     return redirect("admin_return_list")
-    
+
+@never_cache
+@login_required(login_url='admin_login')
+def coupon_list(request):
+    coupons = Coupon.objects.all().order_by("-created_at")
+    return render(request, "adminpanel/coupons/coupon_list.html", {"coupons": coupons})
+
+@never_cache
+@login_required(login_url='admin_login')
+def add_coupon(request):
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip().upper()
+        discount = request.POST.get("discount")
+        min_value = request.POST.get("min_order_value")
+        max_discount = request.POST.get("max_discount")
+        valid_from = request.POST.get("valid_from")
+        valid_to = request.POST.get("valid_to")
+
+        if not (4 <= len(code) <= 20):
+            messages.error(request, "Coupon code must be 4–20 characters")
+            return redirect("add_coupon")
+        if " " in code:
+            messages.error(request, "Coupon code should not contain spaces")
+            return redirect("add_coupon")
+        if Coupon.objects.filter(code=code).exists():
+            messages.error(request, "Coupon already exists")
+            return redirect("add_coupon")
+        try:
+            discount = int(discount)
+            min_value = float(min_value)
+            max_discount = float(max_discount)
+        except:
+            messages.error(request, "Invalid input values")
+            return redirect("add_coupon")
+
+        if discount <= 0 or discount > 90:
+            messages.error(request, "Discount must be between 1 and 90")
+            return redirect("add_coupon")
+
+        if min_value <= 0:
+            messages.error(request, "Minimum order value must be positive")
+            return redirect("add_coupon")
+
+        if max_discount <= 0:
+            messages.error(request, "Max discount must be positive")
+            return redirect("add_coupon")
+
+        if valid_from >= valid_to:
+            messages.error(request, "Invalid date range")
+            return redirect("add_coupon")
+
+        Coupon.objects.create(code=code,discount_percent=discount,min_order_value=min_value,max_discount=max_discount,
+            valid_from=valid_from,valid_to=valid_to,is_active=True)
+        messages.success(request, "Coupon added successfully")
+        return redirect("coupon_list")
+    return render(request, "adminpanel/coupons/add_coupon.html")
+
+@never_cache
+@login_required(login_url='admin_login')
+def toggle_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    coupon.is_active = not coupon.is_active
+    coupon.save()
+    return redirect("coupon_list")
+
+@never_cache
+@login_required(login_url='admin_login')
+def delete_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    coupon.delete()
+    messages.success(request, "Coupon deleted")
+    return redirect("coupon_list")

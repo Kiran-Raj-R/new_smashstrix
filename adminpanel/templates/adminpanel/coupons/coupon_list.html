@@ -1,0 +1,66 @@
+{% extends "adminpanel/base_admin.html" %}
+
+{% block content %}
+
+<div class="p-6">
+
+<h2 class="text-xl font-semibold mb-4">Coupons</h2>
+
+<a href="{% url 'add_coupon' %}"
+class="bg-black text-white px-4 py-2 rounded mb-4 inline-block">
++ Add Coupon
+</a>
+
+<table class="w-full border mt-4">
+
+<thead class="bg-gray-100">
+<tr>
+<th class="p-3">Code</th>
+<th>Discount</th>
+<th>Status</th>
+<th>Valid Till</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for coupon in coupons %}
+<tr class="border-t text-center">
+
+<td class="p-3">{{ coupon.code }}</td>
+<td>{{ coupon.discount_percent }}%</td>
+
+<td>
+{% if coupon.is_active %}
+<span class="text-green-600">Active</span>
+{% else %}
+<span class="text-red-600">Inactive</span>
+{% endif %}
+</td>
+
+<td>{{ coupon.valid_to|date:"d M Y" }}</td>
+
+<td class="space-x-2">
+
+<a href="{% url 'toggle_coupon' coupon.id %}"
+class="px-2 py-1 bg-blue-500 text-white rounded text-sm">
+Toggle
+</a>
+
+<a href="{% url 'delete_coupon' coupon.id %}"
+class="px-2 py-1 bg-red-500 text-white rounded text-sm">
+Delete
+</a>
+
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+
+{% endblock %}

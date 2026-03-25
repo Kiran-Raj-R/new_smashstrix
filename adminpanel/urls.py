@@ -34,5 +34,10 @@ urlpatterns = [
     
     path("returns/",views.admin_return_list,name="admin_return_list"),
     path("returns/handle/<int:item_id>/",views.admin_handle_return,name="admin_handle_return"),
+
+    path("coupons/", views.coupon_list, name="coupon_list"),
+    path("coupons/add/", views.add_coupon, name="add_coupon"),
+    path("coupons/toggle/<int:coupon_id>/", views.toggle_coupon, name="toggle_coupon"),
+    path("coupons/delete/<int:coupon_id>/", views.delete_coupon, name="delete_coupon"),
     
 ]
