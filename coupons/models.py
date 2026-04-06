@@ -8,6 +8,7 @@ class Coupon(models.Model):
     valid_from = models.DateTimeField()
     valid_to = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.code

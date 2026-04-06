@@ -3,11 +3,19 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import JsonResponse
 from . models import Coupon
+from cart.models import CartItem
+from decimal import Decimal
 
 @login_required
 def apply_coupon(request):
     code = request.POST.get("code")
-    cart_total = request.session.get("grand_total", 0)
+    cart_items = CartItem.objects.filter(cart__user=request.user)
+    if not cart_items.exists():
+        return JsonResponse({"error": "Cart is empty"})
+    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+    tax = subtotal * Decimal(0.05)
+    shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
+    cart_total = subtotal + tax + shipping
     try:
         coupon = Coupon.objects.get(code=code, is_active=True)
     except Coupon.DoesNotExist:
@@ -21,15 +29,14 @@ def apply_coupon(request):
     discount = (cart_total * coupon.discount_percent) / 100
     if discount > coupon.max_discount:
         discount = coupon.max_discount
-    new_total = cart_total - discount
-
     request.session["coupon_id"] = coupon.id
     request.session["discount"] = float(discount)
-    request.session["final_total"] = float(new_total)
+    request.session["final_total"] = float(cart_total - discount)
+
     return JsonResponse({
         "success": "Coupon applied",
         "discount": float(discount),
-        "final_total": float(new_total)
+        "final_total": float(cart_total - discount)
     })
 
 @login_required
@@ -37,6 +44,4 @@ def remove_coupon(request):
     request.session.pop("coupon_id", None)
     request.session.pop("discount", None)
     request.session.pop("final_total", None)
-
     return JsonResponse({"success": "Coupon removed"})
-
