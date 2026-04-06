@@ -8,6 +8,7 @@ from django.core.paginator import Paginator
 from decimal import Decimal
 from cart.models import Cart, CartItem
 from user.models import Address
+from coupons.models import Coupon
 from .models import Order, OrderItem
 from .utils import generate_invoice
 
@@ -49,6 +50,7 @@ def place_order(request):
 
     address_id = request.POST.get("address_id")
     address = get_object_or_404(Address, id=address_id, user=request.user)
+
     try:
         cart = Cart.objects.get(user=request.user)
         cart_items = cart.items.select_related("product", "color_variant")
@@ -63,18 +65,27 @@ def place_order(request):
     subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
-    total = subtotal + tax + shipping
-    order = Order.objects.create(user=request.user,address=address,
-        subtotal=subtotal,tax=tax,shipping=shipping,
-        total=total,payment_method="COD",status="pending")
-
+    discount = Decimal("0")
+    coupon = None
+    coupon_id = request.session.get("coupon_id")
+    if coupon_id:
+        try:
+            coupon = Coupon.objects.get(id=coupon_id, is_active=True)
+            cart_total = subtotal + tax + shipping
+            if coupon.valid_from <= timezone.now() <= coupon.valid_to:
+                if cart_total >= coupon.min_order_value:
+                    discount = (cart_total * coupon.discount_percent) / Decimal("100")
+                    if discount > coupon.max_discount:
+                        discount = coupon.max_discount
+        except Coupon.DoesNotExist:
+            coupon = None
+    total = subtotal + tax + shipping - discount
+    order = Order.objects.create(user=request.user,address=address,subtotal=subtotal,tax=tax,shipping=shipping,
+        discount=discount,coupon=coupon,total=total,payment_method="COD",status="pending")
     for item in cart_items:
         variant = item.color_variant
         if item.quantity > variant.stock:
-            messages.error(
-                request,
-                f"Insufficient stock for {item.product.name}"
-            )
+            messages.error(request, f"Insufficient stock for {item.product.name}")
             transaction.set_rollback(True)
             return redirect("checkout")
         variant.stock -= item.quantity
@@ -82,9 +93,13 @@ def place_order(request):
         price = item.product.discount_price or item.product.price
         total_price = price * item.quantity
 
-        OrderItem.objects.create(order=order,product=item.product,color_variant=variant,
-            quantity=item.quantity,price=item.product.discount_price or item.product.price,total_price=total_price)
+        OrderItem.objects.create(order=order,product=item.product,color_variant=variant,quantity=item.quantity,
+            price=price,total_price=total_price)
+
     cart_items.delete()
+    request.session.pop("coupon_id", None)
+    request.session.pop("discount", None)
+    request.session.pop("final_total", None)
 
     return redirect("order_success", order_id=order.order_id)
 

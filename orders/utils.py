@@ -76,8 +76,8 @@ def generate_invoice(order, order_items):
             item.product.name,
             color,
             str(item.quantity),
-            f"₹{item.price}",
-            f"₹{item.total_price}",
+            f"Rs.{item.price}",
+            f"Rs.{item.total_price}",
         ])
 
     product_table = Table(data, colWidths=[200, 80, 50, 80, 80])
@@ -85,11 +85,8 @@ def generate_invoice(order, order_items):
     product_table.setStyle(TableStyle([
         ("BACKGROUND", (0,0), (-1,0), colors.black),
         ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-
         ("ALIGN", (2,1), (-1,-1), "CENTER"),
-
         ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-
         ("BACKGROUND", (0,1), (-1,-1), colors.whitesmoke),
     ]))
 
@@ -98,12 +95,15 @@ def generate_invoice(order, order_items):
 
     # Totals Table
     totals_data = [
-        ["Subtotal", f"₹{order.subtotal}"],
-        ["Tax", f"₹{order.tax}"],
-        ["Shipping", f"₹{order.shipping}"],
-        ["Grand Total", f"₹{order.total}"],
+        ["Subtotal", f"Rs.{order.subtotal}"],
+        ["Tax", f"Rs.{order.tax}"],
+        ["Shipping", f"Rs.{order.shipping}"],
     ]
-
+    if order.coupon:
+        totals_data.append(["Coupon Applied", order.coupon.code])
+    if order.discount and order.discount > 0:
+        totals_data.append(["Discount", f"- Rs.{order.discount}"])
+    totals_data.append(["Grand Total", f"Rs {order.total}"])
     totals_table = Table(totals_data, colWidths=[350, 100])
 
     totals_table.setStyle(TableStyle([
