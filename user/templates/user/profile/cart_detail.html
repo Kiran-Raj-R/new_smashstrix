@@ -4,15 +4,26 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-10">
 
-  <h1 class="text-2xl font-bold mb-8">My Cart</h1>
+  <h1 class="text-2xl font-bold mb-6">My Cart</h1>
+
+  <!-- Message Box -->
+  <div id="cart-message" class="hidden mb-4 p-3 rounded text-sm"></div>
+
+  <div id="cart-container">
 
   {% if cart_items %}
 
+  <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <!-- LEFT SIDE -->
     <div class="lg:col-span-2 space-y-6">
 
       {% for item in cart_items %}
-      <div class="flex gap-6 border rounded-xl p-4 bg-white shadow-sm">
+      <div id="item-row-{{ item.id }}" class="flex gap-6 border rounded-xl p-4 bg-white shadow-sm">
+
+        <!-- IMAGE -->
         <div class="w-28 h-28 flex-shrink-0">
           {% if item.product.images.first %}
           <img src="{{ item.product.images.first.image.url }}"
@@ -22,7 +33,10 @@
                class="w-full h-full object-contain rounded">
           {% endif %}
         </div>
+
+        <!-- DETAILS -->
         <div class="flex-1">
+
           <h2 class="font-semibold text-lg">
             {{ item.product.name }}
           </h2>
@@ -30,48 +44,57 @@
           {% if item.color_variant %}
           <p class="text-sm text-gray-500 mt-1">
             Color:
-            <span class="inline-block w-4 h-4 rounded-full ml-2"style="background-color: {{ item.color_variant.color }}"></span>
+            <span class="inline-block w-4 h-4 rounded-full ml-2"
+                  style="background-color: {{ item.color_variant.color }}">
+            </span>
           </p>
           {% endif %}
 
           <p class="text-sm text-gray-600 mt-1">
             ₹{{ item.unit_price }} each
           </p>
+
+          <!-- QUANTITY -->
           <div class="flex items-center gap-3 mt-4">
 
-            <a href="{% url 'decrement_cart_item' item.id %}"
-               class="px-3 py-1 border rounded hover:bg-gray-100">
+            <button onclick="updateCart({{ item.id }}, 'decrease')"
+                    class="px-3 py-1 border rounded hover:bg-gray-100">
               -
-            </a>
+            </button>
 
-            <span class="px-4 font-medium">
+            <span id="qty-{{ item.id }}" class="px-4 font-medium">
               {{ item.quantity }}
             </span>
 
-            <a href="{% url 'increment_cart_item' item.id %}"
-               class="px-3 py-1 border rounded hover:bg-gray-100">
+            <button onclick="updateCart({{ item.id }}, 'increase')"
+                    class="px-3 py-1 border rounded hover:bg-gray-100">
               +
-            </a>
+            </button>
 
           </div>
 
         </div>
 
+        <!-- RIGHT SIDE -->
         <div class="text-right flex flex-col justify-between">
-          <p class="font-semibold text-lg">
+
+          <p id="item-total-{{ item.id }}" class="font-semibold text-lg">
             ₹{{ item.total_price }}
           </p>
 
-          <a href="{% url 'remove_from_cart' item.id %}"
-             class="text-red-600 text-sm hover:underline">
+          <button onclick="removeCart({{ item.id }})"
+                  class="text-red-600 text-sm hover:underline">
             Remove
-          </a>
+          </button>
+
         </div>
 
       </div>
       {% endfor %}
 
     </div>
+
+    <!-- SUMMARY -->
     <div class="border rounded-xl p-6 bg-white shadow-sm h-fit">
 
       <h2 class="text-lg font-semibold mb-6 border-b pb-3">
@@ -82,7 +105,7 @@
 
         <div class="flex justify-between">
           <span>Subtotal</span>
-          <span>₹{{ subtotal|floatformat:2 }}</span>
+          <span id="cart-total">₹{{ subtotal|floatformat:2 }}</span>
         </div>
 
         <div class="flex justify-between">
@@ -97,7 +120,7 @@
 
         <div class="flex justify-between font-semibold text-lg border-t pt-4">
           <span>Total</span>
-          <span>₹{{ grand_total|floatformat:2 }}</span>
+          <span id="cart-grand-total">₹{{ grand_total|floatformat:2 }}</span>
         </div>
 
       </div>
@@ -113,8 +136,8 @@
 
   {% else %}
 
+  <!-- EMPTY CART -->
   <div class="text-center py-20">
-
     <h2 class="text-xl font-semibold mb-2">
       Your cart is empty
     </h2>
@@ -127,10 +150,96 @@
        class="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800">
       Continue Shopping
     </a>
-
   </div>
 
   {% endif %}
 
+  </div>
+
 </div>
+
+
+<!-- JS -->
+<script>
+
+function showMessage(text, type="error") {
+    const box = document.getElementById("cart-message");
+    box.innerText = text;
+
+    box.classList.remove("hidden");
+
+    if(type === "success"){
+        box.className = "mb-4 p-3 rounded bg-green-100 text-green-700";
+    } else {
+        box.className = "mb-4 p-3 rounded bg-red-100 text-red-700";
+    }
+
+    setTimeout(() => {
+        box.classList.add("hidden");
+    }, 2500);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function updateCart(itemId, action) {
+    fetch("/cart/update/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken(),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `item_id=${itemId}&action=${action}`
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            showMessage(data.error);
+            return;
+        }
+
+        document.getElementById(`qty-${itemId}`).innerText = data.quantity;
+        document.getElementById(`item-total-${itemId}`).innerText = "₹" + data.item_total;
+        document.getElementById("cart-total").innerText = "₹" + data.cart_total;
+
+    });
+}
+
+function removeCart(itemId) {
+    fetch("/cart/remove/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken(),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `item_id=${itemId}`
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById(`item-row-${itemId}`).remove();
+
+        showMessage(data.message, "success");
+
+        document.getElementById("cart-total").innerText = "₹" + data.cart_total;
+
+        if (data.empty) {
+            document.getElementById("cart-container").innerHTML = `
+                <div class="text-center py-20">
+                    <h2 class="text-xl font-semibold mb-2">Your cart is empty</h2>
+                    <p class="text-gray-500 mb-6">Start adding products to your cart.</p>
+                    <a href="/shop/" class="bg-black text-white px-6 py-3 rounded-lg">
+                        Continue Shopping
+                    </a>
+                </div>
+            `;
+        }
+
+    });
+}
+
+</script>
+
 {% endblock %}
