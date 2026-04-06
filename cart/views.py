@@ -46,51 +46,11 @@ def add_to_cart(request):
     messages.success(request, "Product added to cart successfully.")
     return redirect("cart_detail")
 
-# @login_required(login_url="login")
-# def increment_cart_item(request, item_id):
-#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
-
-#     if not cart_item.product.active or \
-#        not cart_item.product.brand.active or \
-#        not cart_item.product.category.active:
-#         messages.error(request, "This product is no longer available.")
-#         cart_item.delete()
-#         return redirect("cart_detail")
-
-#     if cart_item.color_variant:
-#         if cart_item.quantity + 1 > cart_item.color_variant.stock:
-#             messages.error(request, "No more stock available.")
-#             return redirect("cart_detail")
-
-#     if cart_item.quantity + 1 > MAX_CART_QTY:
-#         messages.error(request, "Maximum quantity reached.")
-#         return redirect("cart_detail")
-#     cart_item.quantity += 1
-#     cart_item.save()
-#     return redirect("cart_detail")
-
-# @login_required(login_url="login")
-# def decrement_cart_item(request, item_id):
-#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
-#     if cart_item.quantity <= 1:
-#         cart_item.delete()
-#     else:
-#         cart_item.quantity -= 1
-#         cart_item.save()
-#     return redirect("cart_detail")
-
-# @login_required(login_url="login")
-# def remove_from_cart(request, item_id):
-#     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
-#     cart_item.delete()
-#     messages.success(request, "Item removed from cart.")
-#     return redirect("cart_detail")
-
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 @require_POST
-@login_required
+@login_required(login_url="login")
 def update_cart_item(request):
     item_id = request.POST.get("item_id")
     action = request.POST.get("action")
@@ -124,7 +84,7 @@ def update_cart_item(request):
     })
 
 @require_POST
-@login_required
+@login_required(login_url="login")
 def remove_cart_item(request):
     item_id = request.POST.get("item_id")
     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
