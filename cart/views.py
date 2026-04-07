@@ -77,10 +77,16 @@ def update_cart_item(request):
     item_total = price * cart_item.quantity
     cart = cart_item.cart
     cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+    tax = cart_total * Decimal("0.05")
+    shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
+    grand_total = cart_total + tax + shipping
     return JsonResponse({
         "quantity": cart_item.quantity,
         "item_total": float(item_total),
-        "cart_total": float(cart_total)
+        "cart_total": float(cart_total),
+        "tax": float(tax),
+        "shipping": float(shipping),
+        "grand_total": float(grand_total),
     })
 
 @require_POST
@@ -92,9 +98,15 @@ def remove_cart_item(request):
     cart_item.delete()
     remaining_items = cart.items.count()
     cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+    tax = cart_total * Decimal("0.05")
+    shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
+    grand_total = cart_total + tax + shipping
 
     return JsonResponse({
         "cart_total": float(cart_total),
+        "tax": float(tax),
+        "shipping": float(shipping),
+        "grand_total": float(grand_total),
         "empty": remaining_items == 0,
         "message": "Item removed from cart"
     })
