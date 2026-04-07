@@ -7,6 +7,7 @@ from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from orders.models import Order, OrderItem
 from coupons.models import Coupon
+from wallet.models import Wallet, WalletTransaction
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
@@ -375,7 +376,13 @@ def admin_handle_return(request, item_id):
             item.color_variant.save()
         item.return_status = "Approved"
         item.save()
-        messages.success(request, "Return approved and stock restored.")
+        wallet, _ = Wallet.objects.get_or_create(user=item.order.user)
+        refund_amount = item.total_price
+        wallet.balance += refund_amount
+        wallet.save()
+        WalletTransaction.objects.create(user=item.order.user,amount=refund_amount,transaction_type="credit",
+            description=f"Refund for returned item in order {item.order.order_id}")
+        messages.success(request, "Return approved, stock restored, and amount refunded to wallet.")
     elif action == "reject":
         item.return_status = "Rejected"
         item.save()
