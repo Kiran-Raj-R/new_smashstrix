@@ -1,0 +1,134 @@
+{% extends "user/profile/base.html" %}
+
+{% block dashboard_content %}
+
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold">My Wallet</h2>
+  
+  <div class="flex gap-2"> 
+    <input type="number" id="wallet-amount" placeholder="Enter amount" min="1" class="border rounded-lg px-3 py-2 text-sm w-32 focus:ring-2 focus:ring-blue-500"> 
+    <button onclick="addMoney()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"> 
+      Add Money 
+    </button> 
+  </div>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <h3 class="text-lg font-semibold">Current Balance</h3>
+  <p class="text-3xl font-bold text-green-600 mt-2">
+    ₹{{ wallet.balance }}
+  </p>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow">
+  <h3 class="text-lg font-semibold mb-4">Transaction History</h3>
+
+  {% if transactions %}
+  <div class="space-y-4">
+    {% for txn in transactions %}
+    <div class="flex justify-between items-center border-b pb-3">
+      <div>
+        <p class="font-medium">{{ txn.description }}</p>
+        <p class="text-sm text-gray-500">
+          {{ txn.created_at|date:"d M Y, h:i A" }}
+        </p>
+      </div>
+
+      <div class="text-right">
+        {% if txn.transaction_type == "credit" %}
+          <p class="text-green-600 font-semibold">+₹{{ txn.amount }}</p>
+        {% else %}
+          <p class="text-red-600 font-semibold">-₹{{ txn.amount }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="mt-4 flex items-center gap-2">
+      {% if transactions.has_previous %} 
+      <a href="?page={{ transactions.previous_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50">
+         Previous 
+      </a> 
+      {% endif %} 
+      
+      <span class="px-3 py-1 border rounded bg-gray-100"> 
+        Page {{ transactions.number }} of {{ transactions.paginator.num_pages }} 
+      </span> 
+      
+      {% if transactions.has_next %} 
+      <a href="?page={{ transactions.next_page_number }}" class="px-3 py-1 border rounded hover:bg-gray-50"> 
+        Next 
+      </a> 
+      {% endif %}
+    </div>
+  </div>
+
+  {% else %} 
+    <p class="text-gray-500">No transactions yet.</p>
+  {% endif %}
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function addMoney() {
+        // Updated to use the correct ID selector
+        const amountInput = document.getElementById("wallet-amount");
+        const amount = amountInput.value;
+
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid amount");
+            return;
+        }
+
+        fetch(`/wallet/create-order/?amount=${amount}`)
+        .then(res => res.json())
+        .then(data => {
+            const options = {
+                key: data.key,
+                amount: data.amount,
+                order_id: data.order_id,
+                handler: function (response) {
+                    fetch("/wallet/verify/", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            ...response,
+                            amount: amount
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Money added to wallet");
+                            location.reload();
+                        }
+                    });
+                }
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        })
+        .catch(err => console.error("Error creating order:", err));
+    }
+
+    // Helper to get CSRF token from cookies if not provided by backend
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+{% endblock %}
