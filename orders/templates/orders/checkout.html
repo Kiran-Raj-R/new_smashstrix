@@ -52,17 +52,23 @@
           </div>
 
           <div class="mt-4">
-            <a href="{% url 'address_add' %}"
+            <a href="{% url 'address_add' %}?next={% url 'checkout' %}"
                class="text-blue-600 hover:underline text-sm">
                + Add New Address
             </a>
           </div>
 
           {% else %}
-            <p>No address found</p>
+            <div class="text-center">
+              <p class="text-gray-600 mb-3">No address found</p>
+
+              <a href="{% url 'address_add' %}?next={% url 'checkout' %}"
+                class="text-blue-600 hover:underline text-sm">
+                + Add Address to Continue
+              </a>
+            </div>
           {% endif %}
         </div>
-
 
         <!-- PAYMENT -->
         <div class="bg-white p-6 rounded-xl shadow border">
@@ -73,13 +79,17 @@
             <span>Cash on Delivery</span>
           </label>
 
-          <label class="flex items-center gap-3 border p-4 rounded-lg mt-3 opacity-50">
-            <input type="radio" name="payment_method" value="RAZORPAY" disabled>
-            <span>Online Payment (Coming Soon)</span>
+          <label class="flex items-center gap-3 border p-4 rounded-lg mt-3">
+            <input type="radio" name="payment_method" value="RAZORPAY">
+            <span>Online Payment (Razorpay)</span>
+          </label>
+
+          <label class="flex items-center gap-3 border p-4 rounded-lg mt-3">
+            <input type="radio" name="payment_method" value="WALLET">
+            <span>Wallet Payment</span>
           </label>
 
         </div>
-
 
         <!-- ORDER ITEMS -->
         <div class="bg-white p-6 rounded-xl shadow border">
@@ -120,7 +130,6 @@
         </div>
 
       </div>
-
 
       <!-- RIGHT SIDE -->
       <div>
@@ -187,7 +196,8 @@
           </div>
 
           {% if addresses %}
-          <button type="submit"
+          <button type="button"
+                  onclick="handlePayment()"
                   class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">
             Place Order
           </button>
@@ -201,16 +211,107 @@
   </form>
 </div>
 
+<!-- Razorpay -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-<!-- JS -->
 <script>
 
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-function applyCoupon() {
+function handlePayment() {
 
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+    if (paymentMethod === "COD") {
+        document.querySelector("form").submit();
+        return;
+    }
+
+    if (paymentMethod === "WALLET") {
+    document.querySelector("form").submit();
+    return;
+}
+
+    fetch("/orders/create-razorpay-order/")
+    .then(res => res.json())
+    .then(data => {
+
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "SmashStrix",
+            description: "Order Payment",
+            order_id: data.razorpay_order_id,
+
+            handler: function (response) {
+
+                fetch("/orders/verify-payment/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        address_id: document.querySelector('input[name="address_id"]:checked').value
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        showMessage("Payment verification failed. Try again.", "error");
+                    }
+                });
+            },
+
+            // 🔥 HANDLE FAILURE HERE
+            modal: {
+                ondismiss: function () {
+                    showMessage("Payment cancelled. You can try again.", "error");
+                }
+            }
+        };
+
+        const rzp = new Razorpay(options);
+
+        // 🔥 HANDLE PAYMENT FAILURE EVENT
+        rzp.on('payment.failed', function (response) {
+            console.log(response.error);
+            showMessage("Payment failed. Please try again.", "error");
+        });
+
+        rzp.open();
+    });
+}
+
+function showMessage(message, type) {
+
+    let msgBox = document.getElementById("payment-msg");
+
+    if (!msgBox) {
+        msgBox = document.createElement("div");
+        msgBox.id = "payment-msg";
+        msgBox.style.marginTop = "10px";
+        document.querySelector(".bg-white.p-6.rounded-xl.shadow.border.sticky.top-6").appendChild(msgBox);
+    }
+
+    msgBox.innerText = message;
+
+    if (type === "error") {
+        msgBox.style.color = "red";
+    } else {
+        msgBox.style.color = "green";
+    }
+}
+
+function applyCoupon() {
     const code = document.getElementById("coupon-code").value;
 
     fetch("/coupons/apply/", {
@@ -233,8 +334,8 @@ function applyCoupon() {
             msg.innerText = "Coupon applied!";
             msg.className = "text-green-600";
 
-            document.getElementById("discount").innerText = "-₹" + data.discount;
-            document.getElementById("grand-total").innerText = "₹" + data.final_total;
+            document.getElementById("discount").innerText = "-₹" + parseFloat(data.discount).toFixed(2);
+            document.getElementById("grand-total").innerText = "₹" + parseFloat(data.final_total).toFixed(2);
 
             document.getElementById("remove-coupon-btn").classList.remove("hidden");
         }
@@ -242,22 +343,13 @@ function applyCoupon() {
 }
 
 function removeCoupon() {
-
     fetch("/coupons/remove/", {
         method: "POST",
         headers: {
             "X-CSRFToken": getCSRFToken()
         }
     })
-    .then(res => res.json())
-    .then(data => {
-
-        document.getElementById("coupon-msg").innerText = "";
-        document.getElementById("discount").innerText = "₹0";
-        document.getElementById("remove-coupon-btn").classList.add("hidden");
-
-        location.reload();
-    });
+    .then(() => location.reload());
 }
 
 </script>

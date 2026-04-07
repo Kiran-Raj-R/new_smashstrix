@@ -1,16 +1,22 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse
 from django.core.paginator import Paginator
 from decimal import Decimal
-from cart.models import Cart, CartItem
+from cart.models import Cart
 from user.models import Address
 from coupons.models import Coupon
 from .models import Order, OrderItem
 from .utils import generate_invoice
+import razorpay
+import json
+from django.views.decorators.csrf import csrf_exempt
+from wallet.models import Wallet, WalletTransaction
+from decimal import Decimal
 
 @login_required(login_url="login")
 def checkout_view(request):
@@ -47,21 +53,17 @@ def checkout_view(request):
 def place_order(request):
     if request.method != "POST":
         return redirect("checkout")
-
-    address_id = request.POST.get("address_id")
-    address = get_object_or_404(Address, id=address_id, user=request.user)
-
+    address = get_object_or_404(Address, id=request.POST.get("address_id"), user=request.user)
+    payment_method = request.POST.get("payment_method", "COD")
     try:
         cart = Cart.objects.get(user=request.user)
         cart_items = cart.items.select_related("product", "color_variant")
     except Cart.DoesNotExist:
-        messages.error(request, "Your cart is empty.")
+        messages.error(request, "Cart is empty")
         return redirect("cart_detail")
-
     if not cart_items.exists():
-        messages.error(request, "Your cart is empty.")
+        messages.error(request, "Cart is empty")
         return redirect("cart_detail")
-
     subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
@@ -72,16 +74,21 @@ def place_order(request):
         try:
             coupon = Coupon.objects.get(id=coupon_id, is_active=True)
             cart_total = subtotal + tax + shipping
-            if coupon.valid_from <= timezone.now() <= coupon.valid_to:
-                if cart_total >= coupon.min_order_value:
-                    discount = (cart_total * coupon.discount_percent) / Decimal("100")
-                    if discount > coupon.max_discount:
-                        discount = coupon.max_discount
+            if coupon.valid_from <= timezone.now() <= coupon.valid_to and cart_total >= coupon.min_order_value:
+                discount = (cart_total * coupon.discount_percent) / Decimal("100")
+                discount = min(discount, coupon.max_discount)
         except Coupon.DoesNotExist:
-            coupon = None
+            pass
     total = subtotal + tax + shipping - discount
+    if payment_method == "WALLET":
+        wallet = Wallet.objects.get(user=request.user)
+
+        if wallet.balance < total:
+            messages.error(request, "Insufficient wallet balance")
+            return redirect("checkout")
     order = Order.objects.create(user=request.user,address=address,subtotal=subtotal,tax=tax,shipping=shipping,
-        discount=discount,coupon=coupon,total=total,payment_method="COD",status="pending")
+        discount=discount,coupon=coupon,total=total,payment_method=payment_method,status="pending")
+
     for item in cart_items:
         variant = item.color_variant
         if item.quantity > variant.stock:
@@ -91,15 +98,19 @@ def place_order(request):
         variant.stock -= item.quantity
         variant.save()
         price = item.product.discount_price or item.product.price
-        total_price = price * item.quantity
 
-        OrderItem.objects.create(order=order,product=item.product,color_variant=variant,quantity=item.quantity,
-            price=price,total_price=total_price)
+        OrderItem.objects.create(order=order,product=item.product,color_variant=variant,
+            quantity=item.quantity,price=price,total_price=price * item.quantity)
+    if payment_method == "WALLET":
+        wallet.balance -= total
+        wallet.save()
 
+        WalletTransaction.objects.create(user=request.user,amount=total,
+            transaction_type="debit",description=f"Payment for order {order.order_id}")
+        order.status = "processing"
+        order.save()
     cart_items.delete()
     request.session.pop("coupon_id", None)
-    request.session.pop("discount", None)
-    request.session.pop("final_total", None)
 
     return redirect("order_success", order_id=order.order_id)
 
@@ -161,7 +172,13 @@ def cancel_order(request, order_id):
         order.status = "Cancelled"
         order.cancel_reason = reason
         order.save()
-        messages.success(request, "Order cancelled successfully.")
+
+        wallet, _ = Wallet.objects.get_or_create(user=request.user)
+        wallet.balance += order.total
+        wallet.save()
+        WalletTransaction.objects.create(user=request.user,amount=order.total,transaction_type="credit",
+            description=f"Refund for cancelled order {order.order_id}")
+        messages.success(request, "Order cancelled successfully and amount refund to wallet.")
         return redirect("order_detail", order_id=order.order_id)
 
     return render(request, "orders/cancel_order.html", {"order": order})
@@ -193,7 +210,7 @@ def cancel_order_item(request, item_id):
         return redirect("order_detail", order_id=order.order_id)
     return render(request,"orders/cancel_order_item.html",{"item":item})
 
-@login_required
+@login_required(login_url="login")
 def request_item_return(request, item_id):
     item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
     if item.order.status != "Delivered":
@@ -214,3 +231,65 @@ def request_item_return(request, item_id):
         messages.success(request, "Return request submitted.")
         return redirect("order_detail", order_id=item.order.order_id)
     return render(request, "orders/request_item_return.html", {"item": item})
+
+@login_required(login_url="login")
+def create_razorpay_order(request):
+    try:
+        cart = Cart.objects.get(user=request.user)
+        cart_items = cart.items.select_related("product", "color_variant")
+    except Cart.DoesNotExist:
+        return JsonResponse({"error": "Cart empty"})
+
+    if not cart_items.exists():
+        return JsonResponse({"error": "Cart empty"})
+    subtotal = sum(
+        (item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+    tax = subtotal * Decimal("0.05")
+    shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
+    discount = Decimal("0")
+    coupon_id = request.session.get("coupon_id")
+    if coupon_id:
+        try:
+            coupon = Coupon.objects.get(id=coupon_id, is_active=True)
+            total_before_discount = subtotal + tax + shipping
+            if coupon.valid_from <= timezone.now() <= coupon.valid_to:
+                if total_before_discount >= coupon.min_order_value:
+                    discount = (total_before_discount * coupon.discount_percent) / Decimal("100")
+                    if discount > coupon.max_discount:
+                        discount = coupon.max_discount
+        except Coupon.DoesNotExist:
+            pass
+    final_total = subtotal + tax + shipping - discount
+    amount_in_paise = int(final_total * 100)
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    payment = client.order.create({"amount": amount_in_paise,"currency": "INR","payment_capture": 1})
+
+    return JsonResponse({
+        "razorpay_order_id": payment["id"],
+        "amount": amount_in_paise,
+        "key": settings.RAZORPAY_KEY_ID
+    })
+
+@csrf_exempt
+@login_required
+@transaction.atomic
+def verify_payment(request):
+    data = json.loads(request.body)
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": data["razorpay_order_id"],
+            "razorpay_payment_id": data["razorpay_payment_id"],
+            "razorpay_signature": data["razorpay_signature"],
+        })
+    except:
+        return JsonResponse({"success": False})
+    request.POST = request.POST.copy()
+    request.POST["address_id"] = data["address_id"]
+    response = place_order(request)
+    return JsonResponse({
+        "success": True,
+        "redirect_url": response.url
+    })
+
