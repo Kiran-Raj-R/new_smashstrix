@@ -132,7 +132,7 @@ Item Cancelled
 
 {% else %}
 
-{% if order.status == "Pending" or order.status == "Processing" %}
+{% if order.status == "pending" or order.status == "processing" %}
 
 <form method="POST" action="{% url 'cancel_order_item' item.id %}">
 {% csrf_token %}
@@ -148,7 +148,7 @@ Cancel Item
 
 {% endif %}
 
-{% if order.status == "Delivered" and item.return_status == "Not Requested" %}
+{% if order.status == "delivered" and item.return_status == "Not Requested" %}
 
 <a href="{% url 'request_item_return' item.id %}"
 class="bg-gray-800 text-white px-3 py-1 rounded text-sm hover:bg-black">
@@ -198,7 +198,7 @@ Total: ₹{{ order.total }}
 
 </div>
 
-{% if order.status == "Pending" or order.status == "Processing" %}
+{% if order.status == "pending" or order.status == "processing" %}
 
 <a href="{% url 'cancel_order' order.order_id %}"
 class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700">

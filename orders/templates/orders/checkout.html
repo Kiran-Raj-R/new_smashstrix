@@ -271,7 +271,6 @@ function handlePayment() {
                 });
             },
 
-            // 🔥 HANDLE FAILURE HERE
             modal: {
                 ondismiss: function () {
                     showMessage("Payment cancelled. You can try again.", "error");
@@ -281,7 +280,6 @@ function handlePayment() {
 
         const rzp = new Razorpay(options);
 
-        // 🔥 HANDLE PAYMENT FAILURE EVENT
         rzp.on('payment.failed', function (response) {
             console.log(response.error);
             showMessage("Payment failed. Please try again.", "error");

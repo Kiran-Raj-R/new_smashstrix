@@ -169,16 +169,16 @@ def cancel_order(request, order_id):
                 item.product.stock += item.quantity
                 item.product.save()
 
-        order.status = "Cancelled"
+        order.status = "cancelled"
         order.cancel_reason = reason
         order.save()
-
-        wallet, _ = Wallet.objects.get_or_create(user=request.user)
-        wallet.balance += order.total
-        wallet.save()
-        WalletTransaction.objects.create(user=request.user,amount=order.total,transaction_type="credit",
-            description=f"Refund for cancelled order {order.order_id}")
-        messages.success(request, "Order cancelled successfully and amount refund to wallet.")
+        if order.payment_method != "COD":
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+            wallet.balance += order.total
+            wallet.save()
+            WalletTransaction.objects.create(user=request.user,amount=order.total,transaction_type="credit",
+                description=f"Refund for cancelled order {order.order_id}")
+            messages.success(request, "Order cancelled successfully and amount refund to wallet.")
         return redirect("order_detail", order_id=order.order_id)
 
     return render(request, "orders/cancel_order.html", {"order": order})
@@ -188,10 +188,10 @@ def cancel_order(request, order_id):
 def cancel_order_item(request, item_id):
     item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
     order = item.order
-    if order.status not in ["Pending", "Processing"]:
+    if order.status not in ["pending", "processing"]:
         messages.error(request, "Item cannot be cancelled.")
         return redirect("order_detail", order_id=order.order_id)
-    if item.status == "Cancelled":
+    if item.status == "cancelled":
         messages.warning(request, "Item already cancelled.")
         return redirect("order_detail", order_id=order.order_id)
     if request.method == "POST":
@@ -202,6 +202,13 @@ def cancel_order_item(request, item_id):
         item.status = "cancelled"
         item.cancel_reason = reason
         item.save()
+        if order.payment_method != "COD":
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+            refund_amount = item.total_price
+            wallet.balance += refund_amount
+            wallet.save()
+            WalletTransaction.objects.create(user=request.user,amount=refund_amount,transaction_type="credit",
+                description=f"Refund for cancelled item in order {order.order_id}")
         remaining_items = order.items.filter(status="ordered").count()
         if remaining_items == 0:
             order.status = "cancelled"
@@ -213,7 +220,7 @@ def cancel_order_item(request, item_id):
 @login_required(login_url="login")
 def request_item_return(request, item_id):
     item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
-    if item.order.status != "Delivered":
+    if item.order.status != "delivered":
         messages.error(request, "Return allowed only for delivered items.")
         return redirect("order_detail", order_id=item.order.order_id)
     if item.return_status != "Not Requested":
@@ -287,6 +294,7 @@ def verify_payment(request):
         return JsonResponse({"success": False})
     request.POST = request.POST.copy()
     request.POST["address_id"] = data["address_id"]
+    request.POST["payment_method"] = "RAZORPAY"
     response = place_order(request)
     return JsonResponse({
         "success": True,

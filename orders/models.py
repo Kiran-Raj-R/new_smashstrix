@@ -8,6 +8,7 @@ import uuid
 class Order(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
+        ("processing", "Processing"),
         ("shipped", "Shipped"),
         ("out_for_delivery", "Out For Delivery"),
         ("delivered", "Delivered"),
@@ -16,6 +17,8 @@ class Order(models.Model):
 
     PAYMENT_CHOICES = [
         ("COD", "Cash on Delivery"),
+        ("RAZORPAY", "Online Payment"),
+        ("WALLET", "Wallet"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="orders")
