@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'orders',
     'wishlist',
     'coupons',
-    
+    'wallet',
 
     'crispy_forms',
     'rest_framework',
