@@ -303,26 +303,32 @@ def admin_order_detail(request, order_id):
     if request.method == "POST":
 
         new_status = request.POST.get("status")
-        if order.status in ["Delivered", "Cancelled"]:
+        if order.status in ["delivered", "cancelled"]:
             messages.error(request, "Finalized orders cannot be modified.")
             return redirect("admin_order_detail", order_id=order.order_id)
 
         valid_transitions = {
-            "pending": ["Processing", "Cancelled"],
-            "Processing": ["Shipped", "Cancelled"],
-            "Shipped": ["Out for Delivery"],
-            "Out for Delivery": ["Delivered"],
+            "pending": ["processing", "cancelled"],
+            "processing": ["shipped", "cancelled"],
+            "shipped": ["out_for_delivery"],
+            "out_for_delivery": ["delivered"],
         }
         allowed_statuses = valid_transitions.get(order.status, [])
         if new_status not in allowed_statuses:
             messages.error(request, "Invalid status transition.")
             return redirect("admin_order_detail", order_id=order.order_id)
         
-        if new_status == "Cancelled":
+        if new_status == "cancelled":
             for item in order_items:
                 if item.color_variant:
                     item.color_variant.stock += item.quantity
                     item.color_variant.save()
+            if order.payment_method != "COD":
+                wallet, _ = Wallet.objects.get_or_create(user=order.user)
+                wallet.balance += order.total
+                wallet.save()
+                WalletTransaction.objects.create(user=order.user,amount=order.total,transaction_type="credit",
+                    description=f"Admin cancelled order {order.order_id}")
         order.status = new_status
         order.save()
         messages.success(request, "Order status updated successfully.")
