@@ -94,6 +94,7 @@ def address_list(request):
 
 @login_required(login_url="login")
 def address_add(request):
+    next_url = request.GET.get("next") or request.POST.get("next")
     initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": request.user.mobile}
     form = AddressForm(request.POST or None, initial=initial_data)
     if request.method == 'POST' and form.is_valid():
@@ -105,8 +106,10 @@ def address_add(request):
             Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
         address.save()
         messages.success(request,"Address added successfully.")
+        if next_url and next_url!= None:
+            return redirect(next_url)
         return redirect("address_list")
-    return render(request,"user/profile/address_form.html",{'form':form, 'mode':'add'})
+    return render(request,"user/profile/address_form.html",{'form':form, 'mode':'add', 'next':next_url})
 
 @login_required(login_url="login")
 def address_edit(request,pk):
