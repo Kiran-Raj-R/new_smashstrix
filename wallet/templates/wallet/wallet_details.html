@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block dashboard_content %}
+
+<h2 class="text-2xl font-bold mb-6">My Wallet</h2>
+
+<!-- WALLET BALANCE -->
+
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <h3 class="text-lg font-semibold">Current Balance</h3>
+  <p class="text-3xl font-bold text-green-600 mt-2">
+    ₹{{ wallet.balance }}
+  </p>
+</div>
+
+<!-- TRANSACTIONS -->
+
+<div class="bg-white p-6 rounded-xl shadow">
+  <h3 class="text-lg font-semibold mb-4">Transaction History</h3>
+
+{% if transactions %}
+
+  <div class="space-y-4">
+
+```
+{% for txn in transactions %}
+<div class="flex justify-between items-center border-b pb-3">
+
+  <div>
+    <p class="font-medium">{{ txn.description }}</p>
+    <p class="text-sm text-gray-500">
+      {{ txn.created_at|date:"d M Y, h:i A" }}
+    </p>
+  </div>
+
+  <div class="text-right">
+    {% if txn.transaction_type == "credit" %}
+      <p class="text-green-600 font-semibold">+₹{{ txn.amount }}</p>
+    {% else %}
+      <p class="text-red-600 font-semibold">-₹{{ txn.amount }}</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endfor %}
+```
+
+  </div>
+
+{% else %} <p class="text-gray-500">No transactions yet.</p>
+{% endif %}
+
+</div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function addMoney() {
+
+    const amount = document.querySelector("input[name='amount']").value;
+
+    fetch(`/wallet/create-order/?amount=${amount}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            order_id: data.order_id,
+
+            handler: function (response) {
+
+                fetch("/wallet/verify/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        ...response,
+                        amount: amount
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Money added to wallet");
+                        location.reload();
+                    }
+                });
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+    });
+}
+</script>
+
+{% endblock %}
