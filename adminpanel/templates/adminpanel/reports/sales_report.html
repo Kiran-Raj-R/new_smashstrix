@@ -1,0 +1,140 @@
+{% extends "adminpanel/base_admin.html" %}
+
+{% block content %}
+
+<div class="p-6">
+
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+    <h2 class="text-2xl font-semibold">Sales Report</h2>
+    
+    <div class="flex gap-3">
+      <a href="{% url 'export_sales_pdf' %}?{{ request.GET.urlencode }}"
+         class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors">
+        Download PDF
+      </a>
+
+      <a href="{% url 'export_sales_excel' %}?{{ request.GET.urlencode }}"
+         class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+        Download Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- FILTER -->
+
+  <form method="GET" class="flex flex-wrap gap-4 mb-6">
+
+<select name="filter" id="filter-type" class="border px-3 py-2 rounded">
+  <option value="daily" {% if filter_type == "daily" %}selected{% endif %}>Daily</option>
+  <option value="weekly" {% if filter_type == "weekly" %}selected{% endif %}>Weekly</option>
+  <option value="monthly" {% if filter_type == "monthly" %}selected{% endif %}>Monthly</option>
+  <option value="custom" {% if filter_type == "custom" %}selected{% endif %}>Custom</option>
+</select>
+
+<div class="flex items-center gap-2">
+  <label class="text-sm">From</label>
+  <input type="date" name="start_date" id="start-date"
+         value="{{ start_date }}"
+         class="border px-3 py-2 rounded">
+</div>
+
+<div class="flex items-center gap-2">
+  <label class="text-sm">To</label>
+  <input type="date" name="end_date" id="end-date"
+         value="{{ end_date }}"
+         class="border px-3 py-2 rounded">
+</div>
+
+<button class="bg-blue-600 text-white px-4 py-2 rounded">
+  Apply
+</button>
+<a href="{% url 'sales_report' %}"
+   class="bg-gray-500 text-white px-4 py-2 rounded">
+   Clear
+</a>
+
+  </form>
+
+</div>
+  <!-- SUMMARY -->
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+<div class="bg-white p-4 rounded shadow">
+  <p>Total Orders</p>
+  <h3 class="text-xl font-bold">{{ total_orders }}</h3>
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+  <p>Total Sales</p>
+  <h3 class="text-xl font-bold">₹{{ total_sales|floatformat:2 }}</h3>
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+  <p>Total Discount</p>
+  <h3 class="text-xl font-bold">₹{{ total_discount }}</h3>
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+  <p>Net Revenue</p>
+  <h3 class="text-xl font-bold text-green-600">₹{{ net_revenue|floatformat:2 }}</h3>
+</div>
+
+  </div>
+
+  <!-- TABLE -->
+
+  <div class="bg-white rounded shadow p-4 overflow-x-auto">
+
+<table class="w-full text-sm">
+
+  <thead>
+    <tr class="border-b">
+      <th class="text-left py-2">Order ID</th>
+      <th>User</th>
+      <th>Date</th>
+      <th>Total</th>
+      <th>Discount</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for order in orders %}
+    <tr class="border-b">
+      <td class="py-2">{{ order.order_id }}</td>
+      <td>{{ order.user.email }}</td>
+      <td>{{ order.created_at|date:"d M Y" }}</td>
+      <td>₹{{ order.total }}</td>
+      <td>₹{{ order.discount }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+
+</table>
+
+  </div>
+
+</div>
+
+<script>
+function toggleDateFields() {
+    const filter = document.getElementById("filter-type").value;
+    const start = document.getElementById("start-date");
+    const end = document.getElementById("end-date");
+
+    if (filter === "custom") {
+        start.disabled = false;
+        end.disabled = false;
+    } else {
+        start.disabled = true;
+        end.disabled = true;
+        start.value = "";
+        end.value = "";
+    }
+}
+document.addEventListener("DOMContentLoaded", toggleDateFields);
+
+document.getElementById("filter-type").addEventListener("change", toggleDateFields);
+</script>
+
+{% endblock %}

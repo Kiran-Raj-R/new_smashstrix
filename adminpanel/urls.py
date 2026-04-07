@@ -40,4 +40,8 @@ urlpatterns = [
     path("coupons/toggle/<int:coupon_id>/", views.toggle_coupon, name="toggle_coupon"),
     path("coupons/delete/<int:coupon_id>/", views.delete_coupon, name="delete_coupon"),
     
+    path("sales-report/", views.sales_report, name="sales_report"),
+    path("sales-report/pdf/", views.export_sales_pdf, name="export_sales_pdf"),
+    path("sales-report/excel/", views.export_sales_excel, name="export_sales_excel"),
+    
 ]

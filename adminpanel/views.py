@@ -1,8 +1,9 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
+from django.http import HttpResponse
 from django.db import transaction
-from django.db.models import Q,Sum
+from django.db.models import Q,Sum, Count
 from accounts.models import User
 from products.models import Category, Product, Brand,ProductImage, ColorVariant
 from orders.models import Order, OrderItem
@@ -11,10 +12,12 @@ from wallet.models import Wallet, WalletTransaction
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
 from products.utils import resize_image
-from PIL import Image
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from datetime import timedelta
+from django.utils import timezone
+from .utils import get_filtered_orders,generate_sales_excel, generate_sales_pdf
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -466,3 +469,52 @@ def delete_coupon(request, coupon_id):
     coupon.delete()
     messages.success(request, "Coupon deleted")
     return redirect("coupon_list")
+
+def sales_report(request):
+    filter_type = request.GET.get("filter", "daily")
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    orders = Order.objects.filter(status="delivered")
+    today = timezone.now().date()
+    if filter_type == "daily":
+        orders = orders.filter(created_at__date=today)
+    elif filter_type == "weekly":
+        week_ago = today - timedelta(days=7)
+        orders = orders.filter(created_at__date__gte=week_ago)
+    elif filter_type == "monthly":
+        orders = orders.filter(created_at__month=today.month)
+    elif filter_type == "custom":
+        if start_date and end_date:
+            orders = orders.filter(created_at__date__range=[start_date, end_date])
+    total_orders = orders.count()
+    total_sales = orders.aggregate(total=Sum("total"))["total"] or 0
+    total_discount = orders.aggregate(discount=Sum("discount"))["discount"] or 0
+    net_revenue = total_sales
+
+    context = {
+        "orders": orders,
+        "total_orders": total_orders,
+        "total_sales": total_sales,
+        "total_discount": total_discount,
+        "net_revenue": net_revenue,
+        "filter_type": filter_type,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+    return render(request, "adminpanel/reports/sales_report.html", context)
+
+def export_sales_pdf(request):
+    orders = get_filtered_orders(request)
+    buffer = generate_sales_pdf(orders)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
+    return response
+
+def export_sales_excel(request):
+    orders = get_filtered_orders(request)
+    wb = generate_sales_excel(orders)
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = "attachment; filename=sales_report.xlsx"
+    wb.save(response)
+    return response
+
