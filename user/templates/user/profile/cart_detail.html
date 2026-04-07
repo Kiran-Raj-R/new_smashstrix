@@ -110,12 +110,12 @@
 
         <div class="flex justify-between">
           <span>Tax (5%)</span>
-          <span>₹{{ tax|floatformat:2 }}</span>
+          <span id="cart-tax">₹{{ tax|floatformat:2 }}</span>
         </div>
 
         <div class="flex justify-between">
           <span>Shipping</span>
-          <span>₹{{ shipping|floatformat:2 }}</span>
+          <span id="cart-shipping">₹{{ shipping|floatformat:2 }}</span>
         </div>
 
         <div class="flex justify-between font-semibold text-lg border-t pt-4">
@@ -203,7 +203,9 @@ function updateCart(itemId, action) {
         document.getElementById(`qty-${itemId}`).innerText = data.quantity;
         document.getElementById(`item-total-${itemId}`).innerText = "₹" + data.item_total;
         document.getElementById("cart-total").innerText = "₹" + data.cart_total;
-
+        document.getElementById("cart-tax").innerText = "₹" + data.tax;
+        document.getElementById("cart-shipping").innerText = "₹" + data.shipping;
+        document.getElementById("cart-grand-total").innerText = "₹" + data.grand_total;
     });
 }
 
@@ -224,6 +226,9 @@ function removeCart(itemId) {
         showMessage(data.message, "success");
 
         document.getElementById("cart-total").innerText = "₹" + data.cart_total;
+        document.getElementById("cart-tax").innerText = "₹" + data.tax;
+        document.getElementById("cart-shipping").innerText = "₹" + data.shipping;
+        document.getElementById("cart-grand-total").innerText = "₹" + data.grand_total;
 
         if (data.empty) {
             document.getElementById("cart-container").innerHTML = `
