@@ -454,6 +454,34 @@ def add_coupon(request):
         return redirect("coupon_list")
     return render(request, "adminpanel/coupons/add_coupon.html")
 
+@login_required(login_url="admin_login")
+def edit_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    if request.method == "POST":
+        code = request.POST.get("code")
+        discount = request.POST.get("discount")
+        min_order = request.POST.get("min_order_value")
+        max_discount = request.POST.get("max_discount")
+        valid_from = request.POST.get("valid_from")
+        valid_to = request.POST.get("valid_to")
+        if not code or len(code) < 4:
+            messages.error(request, "Invalid coupon code")
+            return redirect("edit_coupon", coupon_id=coupon.id)
+        if Coupon.objects.exclude(id=coupon.id).filter(code=code).exists():
+            messages.error(request, "Coupon code already exists")
+            return redirect("edit_coupon", coupon_id=coupon.id)
+        coupon.code = code
+        coupon.discount_percent = discount
+        coupon.min_order_value = min_order
+        coupon.max_discount = max_discount
+        coupon.valid_from = valid_from
+        coupon.valid_to = valid_to
+        coupon.save()
+        messages.success(request, "Coupon updated successfully")
+        return redirect("coupon_list")
+
+    return render(request, "adminpanel/coupons/add_coupon.html", {"coupon": coupon})
+
 @never_cache
 @login_required(login_url='admin_login')
 def toggle_coupon(request, coupon_id):

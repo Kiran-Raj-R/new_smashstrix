@@ -42,6 +42,7 @@
       <label class="block text-sm font-medium mb-1">Discount (%)</label>
       <input type="number" name="discount"
              min="1" max="90"
+             value="{{ coupon.discount_percent|default:'' }}"
              placeholder="Enter discount percentage"
              class="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-black"
              required>
@@ -55,6 +56,7 @@
       <label class="block text-sm font-medium mb-1">Minimum Order Value (₹)</label>
       <input type="number" name="min_order_value"
              min="1"
+             value="{{ coupon.min_order_value|default:'' }}"
              placeholder="Minimum cart value required"
              class="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-black"
              required>
@@ -65,6 +67,7 @@
       <label class="block text-sm font-medium mb-1">Maximum Discount (₹)</label>
       <input type="number" name="max_discount"
              min="1"
+             value="{{ coupon.max_discount|default:'' }}"
              placeholder="Max discount cap"
              class="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-black"
              required>
@@ -74,6 +77,7 @@
     <div>
       <label class="block text-sm font-medium mb-1">Valid From</label>
       <input type="datetime-local" name="valid_from"
+             value="{% if coupon %}{{ coupon.valid_from|date:'Y-m-d\\TH:i' }}{% endif %}"
              class="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-black"
              required>
     </div>
@@ -82,6 +86,7 @@
     <div>
       <label class="block text-sm font-medium mb-1">Valid To</label>
       <input type="datetime-local" name="valid_to"
+             value="{% if coupon %}{{ coupon.valid_to|date:'Y-m-d\\TH:i' }}{% endif %}"
              class="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-black"
              required>
     </div>
@@ -96,7 +101,7 @@
 
       <button type="submit"
               class="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition">
-        Create Coupon
+        {% if coupon %}Update Coupon{% else %}Create Coupon{% endif %}
       </button>
 
     </div>
