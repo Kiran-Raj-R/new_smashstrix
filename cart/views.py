@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from products.models import Product, ColorVariant
+from products.utils import get_best_price
 from .models import CartItem, Cart
 from .utils import get_or_create_cart
 from decimal import Decimal
@@ -76,7 +77,7 @@ def update_cart_item(request):
     price = cart_item.product.discount_price or cart_item.product.price
     item_total = price * cart_item.quantity
     cart = cart_item.cart
-    cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+    cart_total = sum((get_best_price(item.product)) * item.quantity for item in cart.items.all())
     tax = cart_total * Decimal("0.05")
     shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
     grand_total = cart_total + tax + shipping
@@ -97,7 +98,7 @@ def remove_cart_item(request):
     cart = cart_item.cart
     cart_item.delete()
     remaining_items = cart.items.count()
-    cart_total = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart.items.all())
+    cart_total = sum((get_best_price(item.product)) * item.quantity for item in cart.items.all())
     tax = cart_total * Decimal("0.05")
     shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
     grand_total = cart_total + tax + shipping
@@ -126,11 +127,7 @@ def cart_detail(request):
     cart_items = (cart.items.select_related("product", "color_variant").prefetch_related("product__images").all())
     subtotal = 0
     for item in cart_items:
-        price = (
-            item.product.discount_price
-            if item.product.discount_price
-            else item.product.price
-        )
+        price = (get_best_price(item.product))
         item.unit_price = price
         item.total_price = price * item.quantity
         subtotal += item.total_price
