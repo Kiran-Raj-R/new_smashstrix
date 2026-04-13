@@ -12,6 +12,7 @@ from user.models import Address
 from coupons.models import Coupon
 from .models import Order, OrderItem
 from .utils import generate_invoice
+from products.utils import get_best_price
 import razorpay
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -29,7 +30,7 @@ def checkout_view(request):
     if not cart_items.exists():
         return redirect("cart_detail")
 
-    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+    subtotal = sum((get_best_price(item.product)) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     total = subtotal + tax + shipping
@@ -64,7 +65,7 @@ def place_order(request):
     if not cart_items.exists():
         messages.error(request, "Cart is empty")
         return redirect("cart_detail")
-    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+    subtotal = sum((get_best_price(item.product)) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     discount = Decimal("0")
@@ -250,7 +251,7 @@ def create_razorpay_order(request):
     if not cart_items.exists():
         return JsonResponse({"error": "Cart empty"})
     subtotal = sum(
-        (item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+        (get_best_price(item.product)) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     discount = Decimal("0")
