@@ -13,6 +13,7 @@ class Category(models.Model):
     name = models.CharField(max_length=25,unique=True)
     image = models.ImageField(upload_to='categories/',blank=True,null=True)
     description = models.TextField()
+    offer_percentage = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -27,6 +28,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=8,decimal_places=2)
     discount_price = models.DecimalField(max_digits=8,decimal_places=2,null=True,blank=True)
     stock = models.PositiveIntegerField(default=0)
+    offer_percentage = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

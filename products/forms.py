@@ -26,17 +26,18 @@ class BrandForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name','description','image','active']
+        fields = ['name','description','image','offer_percentage','active']
         widgets = {
             'name':forms.TextInput(attrs={"class": "w-full border p-2 rounded",'placeholder':'Category Name'}),
             "description": forms.Textarea(attrs={"class": "w-full border p-2 rounded"}),
             'image':forms.ClearableFileInput(attrs={"class": "w-full border p-2 rounded",'accept':'image/*'}),
+            'offer_percentage': forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min": 0,"max": 100,"placeholder": "Offer %"}),
         }
 
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name','brand','category','price','discount_price','description','active']
+        fields = ['name','brand','category','price','discount_price','offer_percentage','description','active']
         widgets = {
             "name": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
             "brand": forms.Select(attrs={"class": "w-full border p-2 rounded"}),
@@ -44,6 +45,7 @@ class ProductForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"class": "w-full border p-2 rounded"}),
             "price": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min":1}),
             "discount_price": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min":0}),
+            "offer_percentage": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min": 0,"max": 100,"placeholder": "Offer %"}),
             "active": forms.CheckboxInput(attrs={"class":"h-4 w-4"}),
         }
     def clean_price(self):
