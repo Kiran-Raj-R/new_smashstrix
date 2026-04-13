@@ -53,6 +53,13 @@
                 <p class="text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
         </div>
+        <div>
+            <label for="id_offer_percentage">Offer (%):</label>
+            {{ form.offer_percentage }}
+            {% for error in form.offer_percentage.errors %}
+                <p class="text-red-600 text-sm">{{ error }}</p>
+            {% endfor %}
+        </div>
 
     </div>
 
