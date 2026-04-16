@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from . models import Coupon
 from cart.models import CartItem
 from decimal import Decimal
+from products.utils import get_best_price
 
 @login_required
 def apply_coupon(request):
@@ -12,7 +13,7 @@ def apply_coupon(request):
     cart_items = CartItem.objects.filter(cart__user=request.user)
     if not cart_items.exists():
         return JsonResponse({"error": "Cart is empty"})
-    subtotal = sum((item.product.discount_price or item.product.price) * item.quantity for item in cart_items)
+    subtotal = sum((get_best_price(item.product)) * item.quantity for item in cart_items)
     tax = subtotal * Decimal(0.05)
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     cart_total = subtotal + tax + shipping
