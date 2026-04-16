@@ -20,6 +20,29 @@
   </p>
 </div>
 
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <h3 class="text-lg font-semibold mb-2">Invite Friends</h3>
+
+  <p class="text-sm text-gray-500 mb-3">
+    Share this link and earn ₹100 when your friend signs up!
+  </p>
+
+  <div class="flex items-center gap-2">
+
+    <input type="text"
+           id="ref-link"
+           value="{{ request.scheme }}://{{ request.get_host }}/signup/?ref={{ request.user.referral_code }}"
+           class="border px-3 py-2 rounded w-full text-sm"
+           readonly>
+
+    <button onclick="copyReferralLink()"
+            class="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
+      Copy
+    </button>
+
+  </div>
+</div>
+
 <div class="bg-white p-6 rounded-xl shadow">
   <h3 class="text-lg font-semibold mb-4">Transaction History</h3>
 
@@ -129,6 +152,15 @@
         }
         return cookieValue;
     }
+    function copyReferralLink() {
+    const input = document.getElementById("ref-link");
+    input.select();
+    input.setSelectionRange(0, 99999); // mobile support
+    document.execCommand("copy");
+
+    alert("Referral link copied!");
+    }
+
 </script>
 
 {% endblock %}
