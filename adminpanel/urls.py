@@ -44,5 +44,9 @@ urlpatterns = [
     path("sales-report/", views.sales_report, name="sales_report"),
     path("sales-report/pdf/", views.export_sales_pdf, name="export_sales_pdf"),
     path("sales-report/excel/", views.export_sales_excel, name="export_sales_excel"),
+
+    path("wallet/transactions/", views.admin_wallet_transactions, name="admin_wallet_transactions"),
+    path("wallet/transactions/<int:transaction_id>/", views.admin_wallet_transaction_detail, name="admin_wallet_transaction_detail"),
+    
     
 ]

@@ -1,0 +1,72 @@
+{% extends "adminpanel/base_admin.html" %}
+
+{% block content %}
+
+<div class="p-6">
+
+  <h2 class="text-xl font-semibold mb-4">Wallet Transactions</h2>
+
+  <table class="w-full border">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="p-2">ID</th>
+        <th class="p-2">Date</th>
+        <th class="p-2">User</th>
+        <th class="p-2">Type</th>
+        <th class="p-2">Amount</th>
+        <th class="p-2">Action</th>
+      </tr>
+    </thead>
+
+```
+<tbody>
+  {% for txn in page_obj %}
+  <tr class="border-t text-center">
+
+    <td class="p-2">{{ txn.id }}</td>
+    <td class="p-2">{{ txn.created_at }}</td>
+    <td class="p-2">{{ txn.user.email }}</td>
+    <td class="p-2">{{ txn.transaction_type }}</td>
+
+    <td class="p-2 text-green-600">
+      ₹{{ txn.amount }}
+    </td>
+
+    <td class="p-2">
+      <a href="{% url 'admin_wallet_transaction_detail' txn.id %}"
+         class="text-blue-600">
+        View
+      </a>
+    </td>
+
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="6" class="p-4 text-center">No transactions</td>
+  </tr>
+  {% endfor %}
+</tbody>
+```
+
+  </table>
+
+  <!-- Pagination -->
+
+  <div class="mt-4 flex justify-center">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="px-3">Prev</a>
+    {% endif %}
+
+```
+<span class="px-3">{{ page_obj.number }}</span>
+
+{% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}" class="px-3">Next</a>
+{% endif %}
+```
+
+  </div>
+
+</div>
+
+{% endblock %}

@@ -546,3 +546,18 @@ def export_sales_excel(request):
     wb.save(response)
     return response
 
+@never_cache
+@login_required(login_url='admin_login')
+def admin_wallet_transactions(request):
+    transactions = WalletTransaction.objects.select_related("user").order_by("-created_at")
+    paginator = Paginator(transactions, 10)
+    page = request.GET.get("page")
+    page_obj = paginator.get_page(page)
+    return render(request, "adminpanel/wallet/transaction_list.html", {"page_obj": page_obj})
+
+@never_cache
+@login_required(login_url='admin_login')
+def admin_wallet_transaction_detail(request, transaction_id):
+    transaction = get_object_or_404(WalletTransaction.objects.select_related("user"),id=transaction_id)
+    return render(request, "adminpanel/wallet/transaction_detail.html", {"transaction": transaction})
+

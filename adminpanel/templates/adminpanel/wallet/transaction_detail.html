@@ -1,0 +1,23 @@
+{% extends "adminpanel/base_admin.html" %}
+
+{% block content %}
+
+<div class="p-6 max-w-xl mx-auto bg-white shadow rounded">
+
+  <h2 class="text-xl font-semibold mb-4">Transaction Detail</h2>
+
+  <p><strong>User:</strong> {{ transaction.user.email }}</p>
+  <p><strong>Transaction ID:</strong> {{ transaction.id }}</p>
+  <p><strong>Date:</strong> {{ transaction.created_at }}</p>
+  <p><strong>Type:</strong> {{ transaction.transaction_type }}</p>
+  <p><strong>Amount:</strong> ₹{{ transaction.amount }}</p>
+  <p><strong>Description:</strong> {{ transaction.description }}</p>
+
+{% if "order" in transaction.description %} <a href="{% url 'admin_order_detail' transaction.description|slice:'-10:' %}"
+    class="text-blue-600 mt-3 inline-block">
+View Related Order </a>
+{% endif %}
+
+</div>
+
+{% endblock %}
