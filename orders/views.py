@@ -58,6 +58,9 @@ def place_order(request):
         return redirect("checkout")
     address = get_object_or_404(Address, id=request.POST.get("address_id"), user=request.user)
     payment_method = request.POST.get("payment_method", "COD")
+    if payment_method == "COD" and total > Decimal("1000"):
+        messages.error(request, "Cash on Delivery is not available for orders above ₹1000.")
+        return redirect("checkout")
     try:
         cart = Cart.objects.get(user=request.user)
         cart_items = cart.items.select_related("product", "color_variant")

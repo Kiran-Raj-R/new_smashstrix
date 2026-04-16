@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load product_filters %}
 
 {% block content %}
 <div class="container mx-auto py-10">
@@ -74,10 +75,23 @@
         <div class="bg-white p-6 rounded-xl shadow border">
           <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
 
-          <label class="flex items-center gap-3 border p-4 rounded-lg">
-            <input type="radio" name="payment_method" value="COD" checked>
+          <label class="flex items-center gap-3 border p-4 rounded-lg
+                {% if total > 1000 %}opacity-50 cursor-not-allowed{% endif %}">
+
+            <input type="radio"
+                  name="payment_method"
+                  value="COD"
+                  {% if total <= 1000 %}checked{% endif %}
+                  {% if total > 1000 %}disabled{% endif %}>
+
             <span>Cash on Delivery</span>
           </label>
+
+          {% if total > 1000 %}
+            <p class="text-red-500 text-xs mt-1">
+              COD not available for orders above ₹1000
+            </p>
+          {% endif %}
 
           <label class="flex items-center gap-3 border p-4 rounded-lg mt-3">
             <input type="radio" name="payment_method" value="RAZORPAY">
@@ -120,7 +134,7 @@
               </div>
 
               <p class="font-semibold text-green-700">
-                ₹{{ subtotal|floatformat:2 }}
+                ₹{{ item.product|best_price|floatformat:2 }}
               </p>
 
             </div>
@@ -241,6 +255,15 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
+
+window.addEventListener("DOMContentLoaded", function () {
+    const total = parseFloat("{{ total }}");
+
+    if (total > 1000) {
+        const razorpay = document.querySelector('input[value="RAZORPAY"]');
+        if (razorpay) razorpay.checked = true;
+    }
+});
 
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
