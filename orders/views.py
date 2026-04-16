@@ -29,8 +29,9 @@ def checkout_view(request):
 
     if not cart_items.exists():
         return redirect("cart_detail")
-
-    subtotal = sum((get_best_price(item.product)) * item.quantity for item in cart_items)
+    
+    valid_coupons = Coupon.objects.filter(is_active=True,valid_from__lte=timezone.now(),valid_to__gte=timezone.now())
+    subtotal = sum(get_best_price(item.product) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     total = subtotal + tax + shipping
@@ -45,6 +46,7 @@ def checkout_view(request):
         "total": total,
         "addresses": addresses,
         "default_address": default_address,
+        "valid_coupons" : valid_coupons,
     }
 
     return render(request, "orders/checkout.html", context)
@@ -146,7 +148,7 @@ def order_detail(request, order_id):
 @login_required(login_url="login")
 def download_invoice(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, user=request.user)
-    order_items = order.items.all()
+    order_items = order.items.filter(status="ordered")
     buffer = generate_invoice(order, order_items)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename=invoice_{order.order_id}.pdf'

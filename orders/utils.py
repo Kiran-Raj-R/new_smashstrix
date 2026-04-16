@@ -4,6 +4,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from io import BytesIO
+from decimal import Decimal
 
 
 def generate_invoice(order, order_items):
@@ -63,22 +64,30 @@ def generate_invoice(order, order_items):
     elements.append(Paragraph(f"Phone : {order.address.phone}", styles["Normal"]))
     elements.append(Spacer(1, 20))
 
+    valid_items = order_items.exclude(status = "cancelled")
+
     # Product Table
     data = [["Product", "Color", "Qty", "Price", "Total"]]
+    subtotal = 0
 
-    for item in order_items:
+    for item in valid_items:
+
+        is_returned = item.return_status == "Approved"
+        status_label = " (Returned)" if is_returned else ""    
 
         color = "-"
         if item.color_variant:
             color = item.color_variant.color
 
         data.append([
-            item.product.name,
+            item.product.name + status_label,
             color,
             str(item.quantity),
             f"Rs.{item.price}",
             f"Rs.{item.total_price}",
         ])
+        if not is_returned and item.status == "ordered":
+            subtotal += item.total_price
 
     product_table = Table(data, colWidths=[200, 80, 50, 80, 80])
 
@@ -93,17 +102,24 @@ def generate_invoice(order, order_items):
     elements.append(product_table)
     elements.append(Spacer(1, 20))
 
-    # Totals Table
+    tax = subtotal * Decimal("0.05") 
+    shipping = order.shipping if subtotal > 0 else 0 
+    original_subtotal = order.subtotal or 1
+    discount = (subtotal / original_subtotal) * order.discount if order.discount else 0
+    final_total = subtotal + tax + shipping - discount
+
     totals_data = [
-        ["Subtotal", f"Rs.{order.subtotal}"],
-        ["Tax", f"Rs.{order.tax}"],
-        ["Shipping", f"Rs.{order.shipping}"],
+        ["Subtotal", f"Rs.{round(subtotal,2)}"],
+        ["Tax", f"Rs.{round(tax,2)}"],
+        ["Shipping", f"Rs.{round(shipping,2)}"],
     ]
     if order.coupon:
         totals_data.append(["Coupon Applied", order.coupon.code])
-    if order.discount and order.discount > 0:
-        totals_data.append(["Discount", f"- Rs.{order.discount}"])
-    totals_data.append(["Grand Total", f"Rs {order.total}"])
+
+    if discount > 0:
+        totals_data.append(["Discount", f"- Rs.{round(discount,2)}"])
+    totals_data.append(["Grand Total", f"Rs {round(final_total,2)}"])
+    
     totals_table = Table(totals_data, colWidths=[350, 100])
 
     totals_table.setStyle(TableStyle([

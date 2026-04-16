@@ -120,7 +120,7 @@
               </div>
 
               <p class="font-semibold text-green-700">
-                ₹{{ item.product.discount_price|default:item.product.price }}
+                ₹{{ subtotal|floatformat:2 }}
               </p>
 
             </div>
@@ -178,7 +178,33 @@
                       class="text-red-600 text-xs mt-1 hidden">
                 Remove Coupon
               </button>
+            
+            </div>
 
+            <div class="mt-3">
+              <p class="text-sm font-semibold mb-2">Available Coupons</p>
+
+              {% for coupon in valid_coupons %}
+                <div class="border p-2 rounded mb-2 flex justify-between items-center">
+
+                  <div>
+                    <p class="font-semibold text-sm">{{ coupon.code }}</p>
+                    <p class="text-xs text-gray-500">
+                      {{ coupon.discount_percent }}% OFF
+                      (Min ₹{{ coupon.min_order_value }})
+                    </p>
+                  </div>
+
+                  <button type="button"
+                          onclick="applyCouponFromList('{{ coupon.code }}')"
+                          class="text-blue-600 text-xs">
+                    Apply
+                  </button>
+
+                </div>
+              {% empty %}
+                <p class="text-xs text-gray-500">No coupons available</p>
+              {% endfor %}
             </div>
 
             <div class="flex justify-between text-green-600">
@@ -348,6 +374,10 @@ function removeCoupon() {
         }
     })
     .then(() => location.reload());
+}
+function applyCouponFromList(code) {
+    document.getElementById("coupon-code").value = code;
+    applyCoupon();
 }
 
 </script>
