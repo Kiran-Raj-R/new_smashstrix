@@ -2,78 +2,131 @@
 {% block title %}Users | SmashStrix{% endblock %}
 
 {% block content %}
+<div class="p-8">
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 uppercase tracking-tight">Users</h2>
+    </div>
 
-<div class="flex justify-between items-center mb-6">
-  <h2 class="text-2xl font-bold">Users</h2>
+    <div class="bg-white shadow-lg rounded-xl p-5 mb-6 border border-gray-100">
+        <form method="GET" class="flex flex-wrap gap-3 items-center">
+            <div class="flex-1 min-w-[300px]">
+                <input type="text" name="search" value="{{ search }}"
+                       placeholder="Search by email..."
+                       class="w-full border border-gray-200 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-black outline-none transition-all">
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit"
+                        class="bg-black hover:bg-gray-800 text-white px-8 py-2.5 rounded-lg font-bold transition-all shadow-md">
+                    Search
+                </button>
+                <a href="{% url 'admin_users' %}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-bold transition-all border border-gray-200 text-center">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
+        <table class="w-full text-left table-auto">
+            <thead class="bg-gray-50 border-b">
+                <tr class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <th class="p-5">Email</th>
+                    <th class="p-5">Name</th>
+                    <th class="p-5">Mobile</th>
+                    <th class="p-5">Joined</th>
+                    <th class="p-5 text-center">Status</th>
+                    <th class="p-5 text-right">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-100">
+                {% for u in users %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-5 font-medium text-gray-800">{{ u.email }}</td>
+                    <td class="p-5 text-gray-700">{{ u.first_name }} {{ u.last_name }}</td>
+                    <td class="p-5 text-gray-600">{{ u.mobile }}</td>
+                    <td class="p-5 text-gray-500 whitespace-nowrap">{{ u.date_joined|date:"d M Y" }}</td>
+
+                    <td class="p-5 text-center">
+                        {% if u.blocked %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-rose-100 text-rose-700">Blocked</span>
+                        {% else %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-green-100 text-green-700">Active</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="p-5 text-right">
+                        {% if u.blocked %}
+                            <button onclick="confirmUnblock('{% url 'admin_unblock_user' u.id %}')" 
+                                    class="px-4 py-1.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-md text-xs font-bold transition-all border border-green-200 uppercase">
+                                Unblock
+                            </button>
+                        {% else %}
+                            <button onclick="confirmBlock('{% url 'admin_block_user' u.id %}')" 
+                                    class="px-4 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-md text-xs font-bold transition-all border border-rose-200 uppercase">
+                                Block
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-12 text-center text-gray-400 italic">
+                        No users found matching your search criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="p-6 bg-gray-50 border-t flex justify-center items-center gap-3">
+            {% if users.has_previous %}
+                <a href="?page={{ users.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold shadow-md">
+                Page {{ users.number }} of {{ users.paginator.num_pages }}
+            </span>
+
+            {% if users.has_next %}
+                <a href="?page={{ users.next_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                    Next
+                </a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-<form method="GET" class="flex gap-2 mb-4">
-  <input type="text" name="search" value="{{ search }}"
-         placeholder="Search by email..."
-         class="border p-2 rounded w-72">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmBlock(url) {
+    Swal.fire({
+        title: "Block User?",
+        text: "This user will no longer be able to access the store.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Block User"
+    }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+}
 
-  <button class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">Search</button>
-
-  <a href="{% url 'admin_users' %}"
-     class="bg-gray-500 text-white px-4 py-2 rounded">Clear</a>
-</form>
-
-<table class="w-full bg-white shadow-md rounded">
-  <thead class="bg-gray-100">
-    <tr>
-      <th class="p-3 text-left">Email</th>
-      <th class="p-3 text-left">Name</th>
-      <th class="p-3 text-left">Mobile</th>
-      <th class="p-3 text-left">Joined</th>
-      <th class="p-3 text-left">Status</th>
-      <th class="p-3 text-left">Actions</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for u in users %}
-    <tr class="border-b">
-
-      <td class="p-3">{{ u.email }}</td>
-      <td class="p-3">{{ u.first_name }} {{ u.last_name }}</td>
-      <td class="p-3">{{ u.mobile }}</td>
-      <td class="p-3">{{ u.date_joined|date:"d M Y" }}</td>
-
-      <td class="p-3">
-        {% if u.blocked %}
-          <span class="text-red-600 font-semibold">Blocked</span>
-        {% else %}
-          <span class="text-green-600 font-semibold">Active</span>
-        {% endif %}
-      </td>
-
-      <td class="p-3">
-        {% if u.blocked %}
-          <a href="#"onclick="confirmUnblock('{% url 'admin_unblock_user' u.id %}')" class="text-green-600 hover:underline">Unblock</a>
-        {% else %}
-          <a href="#"onclick="confirmBlock('{% url 'admin_block_user' u.id %}')" class="text-red-600 hover:underline">Block</a>
-        {% endif %}
-      </td>
-
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<div class="mt-4 flex items-center gap-4">
-  {% if users.has_previous %}
-    <a href="?page={{ users.previous_page_number }}" class="px-3 py-1 bg-gray-300 rounded">
-      Prev
-    </a>
-  {% endif %}
-
-  <span>Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
-
-  {% if users.has_next %}
-    <a href="?page={{ users.next_page_number }}" class="px-3 py-1 bg-gray-300 rounded">
-      Next
-    </a>
-  {% endif %}
-</div>
-
+function confirmUnblock(url) {
+    Swal.fire({
+        title: "Unblock User?",
+        text: "This user will regain access to the store.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#16a34a",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Unblock User"
+    }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+}
+</script>
 {% endblock %}

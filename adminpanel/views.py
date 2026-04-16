@@ -51,7 +51,7 @@ def admin_dashboard(request):
 def admin_user_list(request):
     search = request.GET.get("search", "")
     users = User.objects.filter(email__icontains=search).exclude(email__icontains='admin').order_by("-date_joined")
-    paginator = Paginator(users, 8)
+    paginator = Paginator(users, 4)
     page_number = request.GET.get("page")
     users_page = paginator.get_page(page_number)
     return render(request, 'adminpanel/users/user_list.html', {"users": users_page,"search": search,})
@@ -75,7 +75,7 @@ def unblock_user(request, user_id):
 def brand_list(request):
     search = request.GET.get('search','')
     brands = Brand.objects.filter(name__icontains=search).order_by('-created_at')
-    paginator = Paginator(brands,6)
+    paginator = Paginator(brands,4)
     page = request.GET.get('page')
     brands_page = paginator.get_page(page)
     context = {
@@ -119,7 +119,7 @@ def brand_delete(request,pk):
 def category_list(request):
     search = request.GET.get('search',"")
     categories = Category.objects.filter(name__icontains=search).order_by('-created_at')
-    paginator = Paginator(categories,5)
+    paginator = Paginator(categories,4)
     page_num = request.GET.get('page')
     page_obj = paginator.get_page(page_num)
     context = {
@@ -240,7 +240,7 @@ def product_list(request):
     search = request.GET.get("search", "")
     products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)
                                       |Q(category__name__icontains=search),).annotate(total_stock=Sum("colors__stock")).order_by("-created_at")
-    paginator = Paginator(products, 6)
+    paginator = Paginator(products, 4)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     context = {
@@ -402,7 +402,11 @@ def admin_handle_return(request, item_id):
 @login_required(login_url='admin_login')
 def coupon_list(request):
     coupons = Coupon.objects.all().order_by("-created_at")
-    return render(request, "adminpanel/coupons/coupon_list.html", {"coupons": coupons})
+    paginator = Paginator(coupons, 4)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "adminpanel/coupons/coupon_list.html", {"coupons": page_obj})
 
 @never_cache
 @login_required(login_url='admin_login')
@@ -519,8 +523,12 @@ def sales_report(request):
     total_discount = orders.aggregate(discount=Sum("discount"))["discount"] or 0
     net_revenue = total_sales
 
+    paginator = Paginator(orders.order_by("-created_at"), 4)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        "orders": orders,
+        "orders": page_obj,
         "total_orders": total_orders,
         "total_sales": total_sales,
         "total_discount": total_discount,
@@ -550,7 +558,7 @@ def export_sales_excel(request):
 @login_required(login_url='admin_login')
 def admin_wallet_transactions(request):
     transactions = WalletTransaction.objects.select_related("user").order_by("-created_at")
-    paginator = Paginator(transactions, 10)
+    paginator = Paginator(transactions, 5)
     page = request.GET.get("page")
     page_obj = paginator.get_page(page)
     return render(request, "adminpanel/wallet/transaction_list.html", {"page_obj": page_obj})

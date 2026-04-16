@@ -1,72 +1,74 @@
 {% extends "adminpanel/base_admin.html" %}
 
 {% block content %}
+<div class="p-8">
+  <h2 class="text-3xl font-bold mb-8 text-gray-800 uppercase tracking-tight">Wallet Transactions</h2>
 
-<div class="p-6">
+  <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider">User</th>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+          <th class="p-5 text-sm font-semibold text-gray-600 uppercase tracking-wider text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for txn in page_obj %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="p-5 font-mono text-gray-700">#{{ txn.id }}</td>
+          <td class="p-5 text-gray-600">{{ txn.created_at|date:"M d, Y H:i" }}</td>
+          <td class="p-5 text-gray-700 font-medium">{{ txn.user.email }}</td>
+          <td class="p-5">
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase 
+              {% if txn.transaction_type == 'credit' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+              {{ txn.transaction_type }}
+            </span>
+          </td>
+          <td class="p-5 font-bold text-green-600 text-lg">
+            ₹{{ txn.amount }}
+          </td>
+          <td class="p-5 text-right">
+            <a href="{% url 'admin_wallet_transaction_detail' txn.id %}" 
+               class="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-sm font-bold transition-all border border-blue-200">
+              View Detail
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="p-12 text-center text-gray-400 italic text-lg">No transactions found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-  <h2 class="text-xl font-semibold mb-4">Wallet Transactions</h2>
+    <div class="p-6 bg-gray-50 border-t flex justify-center items-center gap-3">
+      {% if page_obj.has_previous %}
+        <a href="?page=1" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+          &laquo; First
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+          Prev
+        </a>
+      {% endif %}
 
-  <table class="w-full border">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-2">ID</th>
-        <th class="p-2">Date</th>
-        <th class="p-2">User</th>
-        <th class="p-2">Type</th>
-        <th class="p-2">Amount</th>
-        <th class="p-2">Action</th>
-      </tr>
-    </thead>
+      <span class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold shadow-md">
+         Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
 
-```
-<tbody>
-  {% for txn in page_obj %}
-  <tr class="border-t text-center">
-
-    <td class="p-2">{{ txn.id }}</td>
-    <td class="p-2">{{ txn.created_at }}</td>
-    <td class="p-2">{{ txn.user.email }}</td>
-    <td class="p-2">{{ txn.transaction_type }}</td>
-
-    <td class="p-2 text-green-600">
-      ₹{{ txn.amount }}
-    </td>
-
-    <td class="p-2">
-      <a href="{% url 'admin_wallet_transaction_detail' txn.id %}"
-         class="text-blue-600">
-        View
-      </a>
-    </td>
-
-  </tr>
-  {% empty %}
-  <tr>
-    <td colspan="6" class="p-4 text-center">No transactions</td>
-  </tr>
-  {% endfor %}
-</tbody>
-```
-
-  </table>
-
-  <!-- Pagination -->
-
-  <div class="mt-4 flex justify-center">
-    {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}" class="px-3">Prev</a>
-    {% endif %}
-
-```
-<span class="px-3">{{ page_obj.number }}</span>
-
-{% if page_obj.has_next %}
-  <a href="?page={{ page_obj.next_page_number }}" class="px-3">Next</a>
-{% endif %}
-```
-
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+          Next
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+          Last &raquo;
+        </a>
+      {% endif %}
+    </div>
   </div>
-
 </div>
-
 {% endblock %}
