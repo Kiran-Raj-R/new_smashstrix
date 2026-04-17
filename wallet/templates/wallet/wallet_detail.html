@@ -31,7 +31,7 @@
 
     <input type="text"
            id="ref-link"
-           value="{{ request.scheme }}://{{ request.get_host }}/signup/?ref={{ request.user.referral_code }}"
+           value="{{ request.scheme }}://{{ request.get_host }}{% url 'signup' %}?ref={{ request.user.referral_code }}"
            class="border px-3 py-2 rounded w-full text-sm"
            readonly>
 
@@ -94,7 +94,6 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     function addMoney() {
-        // Updated to use the correct ID selector
         const amountInput = document.getElementById("wallet-amount");
         const amount = amountInput.value;
 
@@ -137,7 +136,6 @@
         .catch(err => console.error("Error creating order:", err));
     }
 
-    // Helper to get CSRF token from cookies if not provided by backend
     function getCSRFToken() {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -155,7 +153,7 @@
     function copyReferralLink() {
     const input = document.getElementById("ref-link");
     input.select();
-    input.setSelectionRange(0, 99999); // mobile support
+    input.setSelectionRange(0, 99999);
     document.execCommand("copy");
 
     alert("Referral link copied!");
