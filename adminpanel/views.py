@@ -18,6 +18,7 @@ from django.views.decorators.http import require_POST
 from datetime import timedelta
 from django.utils import timezone
 from .utils import get_filtered_orders,generate_sales_excel, generate_sales_pdf
+from django.db.models.functions import TruncDate, TruncMonth
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -36,13 +37,42 @@ def admin_login(request):
 @never_cache
 @login_required(login_url='admin_login')
 def admin_dashboard(request):
+    filter_type = request.GET.get("filter", "daily")
+    orders = Order.objects.filter(status="Delivered")
+    if filter_type == "monthly":
+        sales_data = (orders.annotate(period=TruncMonth("created_at"))
+            .values("period").annotate(total=Sum("total")).order_by("period"))
+    else:
+        sales_data = (orders.annotate(period=TruncDate("created_at"))
+            .values("period").annotate(total=Sum("total")).order_by("period"))
+
+    labels = [data["period"].strftime("%d %b") for data in sales_data]
+    values = [float(data["total"]) for data in sales_data]
+
+    top_products = (OrderItem.objects.filter(order__status="Delivered").values("product__name")
+                    .annotate(total_sold=Sum("quantity")).order_by("-total_sold")[:10])
+
+    top_categories = (OrderItem.objects.filter(order__status="Delivered").values("product__category__name")
+                    .annotate(total_sold=Sum("quantity")).order_by("-total_sold")[:10])
+
+    top_brands = (OrderItem.objects.filter(order__status="Delivered").values("product__brand__name")
+                    .annotate(total_sold=Sum("quantity")).order_by("-total_sold")[:10])
+
     context = {
         "total_users": User.objects.count(),
         "total_products": Product.objects.filter(active=True).count(),
         "total_categories": Category.objects.filter(active=True).count(),
         "total_brands": Brand.objects.filter(active=True).count(),
-        "recent_users": User.objects.order_by('-date_joined')[:5],
-        "recent_products": Product.objects.order_by('-created_at')[:5],
+        "recent_users": User.objects.order_by('-date_joined')[:4],
+        "recent_products": Product.objects.order_by('-created_at')[:4],
+
+        "labels": labels,
+        "values": values,
+        "filter_type": filter_type,
+
+        "top_products": top_products,
+        "top_categories": top_categories,
+        "top_brands": top_brands,
     }
     return render(request,'adminpanel/dashboard.html',context)
 

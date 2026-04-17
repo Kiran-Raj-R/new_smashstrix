@@ -19,7 +19,7 @@
       <tbody class="divide-y divide-gray-100">
         {% for txn in page_obj %}
         <tr class="hover:bg-gray-50 transition-colors">
-          <td class="p-5 font-mono text-gray-700">#{{ txn.id }}</td>
+          <td class="p-5 font-mono text-gray-700">#{{ txn.transaction_id }}</td>
           <td class="p-5 text-gray-600">{{ txn.created_at|date:"M d, Y H:i" }}</td>
           <td class="p-5 text-gray-700 font-medium">{{ txn.user.email }}</td>
           <td class="p-5">
