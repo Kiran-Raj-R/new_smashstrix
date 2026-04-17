@@ -114,6 +114,8 @@ def brand_list(request):
     }
     return render(request,'adminpanel/brands/brand_list.html',context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def brand_add(request):
     if request.method == 'POST':
         form = BrandForm(request.POST, request.FILES)
@@ -125,6 +127,8 @@ def brand_add(request):
         form = BrandForm()   
     return render(request, 'adminpanel/brands/brand_form.html', {'form':form})
 
+@never_cache
+@login_required(login_url='admin_login')
 def brand_edit(request,pk):
     brand = Brand.objects.get(id=pk)
     if request.method == 'POST':
@@ -158,6 +162,8 @@ def category_list(request):
     }
     return render(request,'adminpanel/categories/category_list.html',context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def category_add(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST, request.FILES)
@@ -169,6 +175,8 @@ def category_add(request):
         form = CategoryForm()
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
+@never_cache
+@login_required(login_url='admin_login')
 def category_edit(request,pk):
     category = Category.objects.get(id=pk)
     if request.method == 'POST':
@@ -181,6 +189,8 @@ def category_edit(request,pk):
         form = CategoryForm(instance=category)    
     return render(request,'adminpanel/categories/category_form.html',{'form':form})
 
+@never_cache
+@login_required(login_url='admin_login')
 def category_delete(request,pk):
     category = Category.objects.get(id=pk)
     category.active=False
@@ -188,6 +198,8 @@ def category_delete(request,pk):
     messages.success(request,"Category deleted Successfully.")
     return redirect('admin_categories')
 
+@never_cache
+@login_required(login_url='admin_login')
 def product_add(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -215,6 +227,8 @@ def product_add(request):
         "product": None,
     })
 
+@never_cache
+@login_required(login_url='admin_login')
 def color_variant_add(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == "POST":
@@ -237,6 +251,8 @@ def color_variant_add(request, product_id):
         "variants": variants,
     })
 
+@never_cache
+@login_required(login_url='admin_login')
 def color_variant_delete(request, variant_id):
     variant = get_object_or_404(ColorVariant, id=variant_id)
     product = variant.product
@@ -246,6 +262,8 @@ def color_variant_delete(request, variant_id):
     messages.success(request, "Color variant deleted.")
     return redirect("admin_color_variant_add", product.id)
 
+@never_cache
+@login_required(login_url='admin_login')
 def product_edit(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if request.method == "POST":
@@ -279,6 +297,8 @@ def product_list(request):
     }
     return render(request, "adminpanel/products/product_list.html", context)
 
+@never_cache
+@login_required(login_url='admin_login')
 def product_delete(request, pk):
     product = Product.objects.get(id=pk)
     product.active = False
@@ -311,7 +331,7 @@ def admin_logout(request):
 @login_required(login_url='admin_login')
 def admin_order_list(request):
     orders = Order.objects.all().order_by("-created_at")
-    search = request.GET.get("search")
+    search = request.GET.get("search", "")
     status = request.GET.get("status")
     if search:
         orders = orders.filter(Q(order_id__icontains=search) |Q(user__email__icontains=search))
@@ -488,7 +508,8 @@ def add_coupon(request):
         return redirect("coupon_list")
     return render(request, "adminpanel/coupons/add_coupon.html")
 
-@login_required(login_url="admin_login")
+@never_cache
+@login_required(login_url='admin_login')
 def edit_coupon(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
     if request.method == "POST":
