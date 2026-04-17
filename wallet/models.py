@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 class Wallet(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -14,6 +15,7 @@ class WalletTransaction(models.Model):
         ("debit", "Debit"),
     )
 
+    transaction_id = models.CharField(max_length=20,unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE)
@@ -22,3 +24,9 @@ class WalletTransaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.transaction_type} - ₹{self.amount}"
+    
+    def save(self, *args, **kwargs):
+        if not self.transaction_id:
+            self.transaction_id = f"TXN{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
