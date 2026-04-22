@@ -19,6 +19,14 @@ from django.views.decorators.csrf import csrf_exempt
 from wallet.models import Wallet, WalletTransaction
 from decimal import Decimal
 
+def calculate_item_refund(order, item):
+    if not order.subtotal or order.subtotal == 0:
+        return item.total_price
+    ratio = item.total_price / order.subtotal
+    refund = (item.total_price+ (order.tax * ratio)+ (order.shipping * ratio)- (order.discount * ratio))
+
+    return refund.quantize(Decimal("0.01"))
+
 @login_required(login_url="login")
 def checkout_view(request):
     try:
@@ -103,7 +111,7 @@ def place_order(request):
             return redirect("checkout")
         variant.stock -= item.quantity
         variant.save()
-        price = item.product.discount_price or item.product.price
+        price = get_best_price(item.product)
 
         OrderItem.objects.create(order=order,product=item.product,color_variant=variant,
             quantity=item.quantity,price=price,total_price=price * item.quantity)
@@ -140,7 +148,7 @@ def order_list(request):
 @login_required(login_url="login")
 def order_detail(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, user=request.user)
-    order_items = OrderItem.objects.filter(order=order)
+    order_items = order.items.select_related("product","color_variant").prefetch_related("product__images")
 
     context = {
         "order": order,

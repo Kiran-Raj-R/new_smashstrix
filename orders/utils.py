@@ -83,7 +83,7 @@ def generate_invoice(order, order_items):
             item.product.name + status_label,
             color,
             str(item.quantity),
-            f"Rs.{item.price}",
+            f"Rs.{item.price:.2f}",
             f"Rs.{item.total_price}",
         ])
         if not is_returned and item.status == "ordered":
@@ -102,7 +102,7 @@ def generate_invoice(order, order_items):
     elements.append(product_table)
     elements.append(Spacer(1, 20))
 
-    tax = subtotal * Decimal("0.05") 
+    tax = order.tax
     shipping = order.shipping if subtotal > 0 else 0 
     original_subtotal = order.subtotal or 1
     discount = (subtotal / original_subtotal) * order.discount if order.discount else 0
