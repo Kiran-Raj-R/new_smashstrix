@@ -30,7 +30,6 @@ class UserSignupForm(forms.ModelForm):
         if not re.fullmatch(r"[A-Za-z]+", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return name.capitalize()
-    
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
