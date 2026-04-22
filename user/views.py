@@ -9,6 +9,8 @@ from .forms import AddressForm, EditProfileForm, ChangePasswordForm
 from django.contrib import messages
 from accounts.utils import send_email_change_otp
 from django.utils import timezone
+from products.utils import get_best_price, get_best_offer
+from wishlist.models import WishlistItem
 
 
 def home(request):
@@ -56,10 +58,20 @@ def shop(request):
     page = request.GET.get("page")
     products = paginator.get_page(page)
 
+    for product in products:
+            product.final_price = get_best_price(product)
+            product.best_offer = get_best_offer(product)
+
     query_params = request.GET.copy()
     if "page" in query_params:
         del query_params["page"]
     querystring = query_params.urlencode()
+
+    wishlist_product_ids = []
+    if request.user.is_authenticated:
+        wishlist_product_ids = list(WishlistItem.objects.filter(wishlist__user=request.user)
+                                    .values_list("product_id", flat=True))
+    
     context = {
         "products": products,
         "querystring": querystring,
@@ -72,6 +84,7 @@ def shop(request):
         "selected_colors": selected_colors,
         "min_price": min_price,
         "max_price": max_price,
+        "wishlist_product_ids": wishlist_product_ids,
         "request": request,
     }
     return render(request, "user/shop.html", context)
@@ -80,7 +93,18 @@ def shop(request):
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id, active=True)
     related_products = Product.objects.filter(category=product.category, active=True).exclude(id=product.id)[:4]
-    return render(request,"user/product_detail.html",{"product": product,"related_products": related_products,},)
+    final_price = get_best_price(product)
+    best_offer = max(product.offer_percentage or 0,product.category.offer_percentage or 0)
+    for rp in related_products:
+        rp.final_price = get_best_price(rp)
+        rp.best_offer = max(rp.offer_percentage or 0,rp.category.offer_percentage or 0)
+    context = {
+        "product": product,
+        "related_products": related_products,
+        "final_price": final_price,
+        "best_offer": best_offer,
+    }
+    return render(request,"user/product_detail.html", context)
 
 @login_required(login_url="login")
 def user_profile(request):

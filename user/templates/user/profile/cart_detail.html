@@ -25,9 +25,8 @@
 
         <!-- IMAGE -->
         <div class="w-28 h-28 flex-shrink-0">
-          {% if item.product.images.first %}
-          <img src="{{ item.product.images.first.image.url }}"
-               class="w-full h-full object-contain rounded">
+          {% if item.product.thumbnail %}
+          <img src="{{ item.product.thumbnail.image.url }}"/>
           {% else %}
           <img src="{% static 'img/noimage.png' %}"
                class="w-full h-full object-contain rounded">
@@ -53,6 +52,14 @@
           <p class="text-sm text-gray-600 mt-1">
             ₹{{ item.unit_price }} each
           </p>
+          {% if item.best_offer > 0 %}
+          <p class="text-xs text-red-500 mt-1">
+              {{ item.best_offer }}% OFF Applied
+          </p>
+          <p class="text-xs text-gray-400 line-through">
+              ₹{{ item.product.price|floatformat:2 }}
+          </p>
+          {% endif %}
 
           <!-- QUANTITY -->
           <div class="flex items-center gap-3 mt-4">
