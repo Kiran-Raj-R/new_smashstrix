@@ -3,14 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Wishlist, WishlistItem
 from products.models import Product, ColorVariant
+from products.utils import get_best_price, get_best_offer
 
 @login_required(login_url="login")
 def wishlist_view(request):
     wishlist, created = Wishlist.objects.get_or_create(user=request.user)
     items = wishlist.items.select_related("product","color_variant")
-    context = {
-        "items": items
-    }
+    for item in items:
+        item.final_price = get_best_price(item.product)
+        item.best_offer = get_best_offer(item.product)
+    context = {"items": items}
     return render(request, "user/profile/wishlist.html", context)
 
 @login_required(login_url="login")
