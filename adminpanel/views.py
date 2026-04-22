@@ -19,7 +19,7 @@ from datetime import timedelta
 from django.utils import timezone
 from .utils import get_filtered_orders,generate_sales_excel, generate_sales_pdf
 from django.db.models.functions import TruncDate, TruncMonth
-from orders.views import calculate_item_refund
+from orders.utils import calculate_item_refund
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
