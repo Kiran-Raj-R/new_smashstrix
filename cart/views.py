@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from products.models import Product, ColorVariant
-from products.utils import get_best_price
+from products.utils import get_best_price, get_best_offer
 from .models import CartItem, Cart
 from .utils import get_or_create_cart
 from decimal import Decimal
@@ -74,7 +74,7 @@ def update_cart_item(request):
             return JsonResponse({"error": "Minimum quantity is 1"})
         cart_item.quantity -= 1
     cart_item.save()
-    price = cart_item.product.discount_price or cart_item.product.price
+    price = get_best_price(cart_item.product)
     item_total = price * cart_item.quantity
     cart = cart_item.cart
     cart_total = sum((get_best_price(item.product)) * item.quantity for item in cart.items.all())
@@ -127,9 +127,10 @@ def cart_detail(request):
     cart_items = (cart.items.select_related("product", "color_variant").prefetch_related("product__images").all())
     subtotal = 0
     for item in cart_items:
-        price = (get_best_price(item.product))
+        price = get_best_price(item.product)
         item.unit_price = price
         item.total_price = price * item.quantity
+        item.best_offer = get_best_offer(item.product)
         subtotal += item.total_price
     tax = subtotal * Decimal("0.05")
     shipping = 0 if subtotal > 5000 else 50
