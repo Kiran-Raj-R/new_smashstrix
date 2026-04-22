@@ -22,6 +22,14 @@ class BrandForm(forms.ModelForm):
             'logo': forms.FileInput(attrs={'accept':'image/*'}),
             "active": forms.CheckboxInput(),
         }
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise forms.ValidationError("Brand name is required.")
+        qs = Brand.objects.exclude(id=self.instance.id).filter(name__iexact=name)
+        if qs.exists():
+            raise forms.ValidationError("Brand already exists.")
+        return name.title()
 
 class CategoryForm(forms.ModelForm):
     class Meta:
@@ -34,34 +42,43 @@ class CategoryForm(forms.ModelForm):
             'offer_percentage': forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min": 0,"max": 100,"placeholder": "Offer %"}),
         }
 
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise forms.ValidationError("Category name is required.")
+        qs = Category.objects.exclude(id=self.instance.id).filter(name__iexact=name)
+        if qs.exists():
+            raise forms.ValidationError("Category already exists.")
+        return name.title()
+
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name','brand','category','price','discount_price','offer_percentage','description','active']
+        fields = ['name','brand','category','price','offer_percentage','description','active']
         widgets = {
             "name": forms.TextInput(attrs={"class": "w-full border p-2 rounded"}),
             "brand": forms.Select(attrs={"class": "w-full border p-2 rounded"}),
             "category": forms.Select(attrs={"class": "w-full border p-2 rounded"}),
             "description": forms.Textarea(attrs={"class": "w-full border p-2 rounded"}),
             "price": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min":1}),
-            "discount_price": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min":0}),
             "offer_percentage": forms.NumberInput(attrs={"class": "w-full border p-2 rounded","min": 0,"max": 100,"placeholder": "Offer %"}),
             "active": forms.CheckboxInput(attrs={"class":"h-4 w-4"}),
         }
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "").strip()
+        if not name:
+            raise forms.ValidationError("Product name is required.")
+        qs = Product.objects.exclude(id=self.instance.id).filter(name__iexact=name)
+        if qs.exists():
+            raise forms.ValidationError("Product already exists.")
+        return name.title()
+
     def clean_price(self):
         price = self.cleaned_data.get("price")
         if price is not None and price <= 0:
             raise forms.ValidationError("Price must be greated than zero.")
         return price
-    
-    def clean_discount_price(self):
-        discount = self.cleaned_data.get("discount_price")
-        price = self.cleaned_data.get("price")
-        if discount is not None and discount < 0:
-            raise forms.ValidationError("Discount price cannot be negative.")
-        if discount and price and discount >= price:
-            raise forms.ValidationError("Discount cannot be greater than the price.")
-        return discount
 
 class ColorVariantForm(forms.ModelForm):
     class Meta:

@@ -26,7 +26,6 @@ class Product(models.Model):
     brand = models.ForeignKey(Brand,on_delete=models.CASCADE)
     category = models.ForeignKey(Category,on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=8,decimal_places=2)
-    discount_price = models.DecimalField(max_digits=8,decimal_places=2,null=True,blank=True)
     stock = models.PositiveIntegerField(default=0)
     offer_percentage = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)
@@ -35,9 +34,14 @@ class Product(models.Model):
     def __str__(self):
         return self.name
     
+    @property
+    def thumbnail(self):
+        return self.images.filter(is_primary=True).first() or self.images.first()
+    
 class ProductImage(models.Model):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,related_name='images')
     image = models.ImageField(upload_to='products/')
+    is_primary = models.BooleanField(default=False)
 
 class ColorVariant(models.Model):
     COLOR_CHOICES = [
