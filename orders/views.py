@@ -11,21 +11,13 @@ from cart.models import Cart
 from user.models import Address
 from coupons.models import Coupon
 from .models import Order, OrderItem
-from .utils import generate_invoice
+from .utils import generate_invoice, calculate_item_refund
 from products.utils import get_best_price
 import razorpay
 import json
 from django.views.decorators.csrf import csrf_exempt
 from wallet.models import Wallet, WalletTransaction
 from decimal import Decimal
-
-def calculate_item_refund(order, item):
-    if not order.subtotal or order.subtotal == 0:
-        return item.total_price
-    ratio = item.total_price / order.subtotal
-    refund = (item.total_price+ (order.tax * ratio)+ (order.shipping * ratio)- (order.discount * ratio))
-
-    return refund.quantize(Decimal("0.01"))
 
 @login_required(login_url="login")
 def checkout_view(request):
@@ -38,13 +30,15 @@ def checkout_view(request):
     if not cart_items.exists():
         return redirect("cart_detail")
     
-    valid_coupons = Coupon.objects.filter(is_active=True,valid_from__lte=timezone.now(),valid_to__gte=timezone.now())
     subtotal = sum(get_best_price(item.product) * item.quantity for item in cart_items)
     tax = subtotal * Decimal("0.05")
     shipping = Decimal("50.00") if subtotal < 5000 else Decimal("0.00")
     total = subtotal + tax + shipping
+    valid_coupons = Coupon.objects.filter(is_active=True,valid_from__lte=timezone.now(),
+                                          valid_to__gte=timezone.now(),min_order_value__lte=total)
     addresses = Address.objects.filter(user=request.user)
     default_address = addresses.filter(is_default=True).first()
+    wallet = Wallet.objects.filter(user=request.user).first()
 
     context = {
         "cart_items": cart_items,
@@ -55,6 +49,7 @@ def checkout_view(request):
         "addresses": addresses,
         "default_address": default_address,
         "valid_coupons" : valid_coupons,
+        "wallet":wallet,
     }
 
     return render(request, "orders/checkout.html", context)
@@ -66,9 +61,7 @@ def place_order(request):
         return redirect("checkout")
     address = get_object_or_404(Address, id=request.POST.get("address_id"), user=request.user)
     payment_method = request.POST.get("payment_method", "COD")
-    if payment_method == "COD" and total > Decimal("1000"):
-        messages.error(request, "Cash on Delivery is not available for orders above ₹1000.")
-        return redirect("checkout")
+    
     try:
         cart = Cart.objects.get(user=request.user)
         cart_items = cart.items.select_related("product", "color_variant")
@@ -90,10 +83,15 @@ def place_order(request):
             cart_total = subtotal + tax + shipping
             if coupon.valid_from <= timezone.now() <= coupon.valid_to and cart_total >= coupon.min_order_value:
                 discount = (cart_total * coupon.discount_percent) / Decimal("100")
-                discount = min(discount, coupon.max_discount)
+            if discount > coupon.max_discount:
+                discount = coupon.max_discount
         except Coupon.DoesNotExist:
             pass
     total = subtotal + tax + shipping - discount
+    if payment_method == "COD" and total > Decimal("1000"):
+        messages.error(request, "Cash on Delivery is not available for orders above ₹1000.")
+        return redirect("checkout")
+    
     if payment_method == "WALLET":
         wallet = Wallet.objects.get(user=request.user)
 
@@ -218,7 +216,7 @@ def cancel_order_item(request, item_id):
         item.save()
         if order.payment_method != "COD":
             wallet, _ = Wallet.objects.get_or_create(user=request.user)
-            refund_amount = item.total_price
+            refund_amount = calculate_item_refund(order, item)
             wallet.balance += refund_amount
             wallet.save()
             WalletTransaction.objects.create(user=request.user,amount=refund_amount,transaction_type="credit",

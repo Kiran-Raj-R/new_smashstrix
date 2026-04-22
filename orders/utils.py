@@ -4,7 +4,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from io import BytesIO
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 def generate_invoice(order, order_items):
@@ -151,3 +151,14 @@ def generate_invoice(order, order_items):
     buffer.seek(0)
 
     return buffer
+
+def calculate_item_refund(order, item):
+    if order.subtotal <= 0:
+        return item.total_price
+    ratio = item.total_price / order.subtotal
+    tax_share = order.tax * ratio
+    shipping_share = order.shipping * ratio
+    discount_share = order.discount * ratio
+    refund = item.total_price + tax_share + shipping_share - discount_share
+    return refund.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
