@@ -3,112 +3,349 @@
 
 {% block content %}
 
-<h2 class="text-2xl font-semibold mb-4">
-  {% if product %}Edit Product{% else %}Add Product{% endif %}
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+<h2 class="text-2xl font-semibold mb-6">
+    {% if product %}Edit Product{% else %}Add Product{% endif %}
 </h2>
 
 <form method="POST" enctype="multipart/form-data"
-      class="bg-white p-6 rounded-lg shadow max-w-3xl space-y-6">
+      class="bg-white p-6 rounded-xl shadow max-w-4xl space-y-6">
 
     {% csrf_token %}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Product Fields -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         <div>
-            <label for="id_name">Name:</label>
+            <label class="block font-medium mb-1">Product Name</label>
             {{ form.name }}
             {% for error in form.name.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
+                <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
         </div>
 
         <div>
-            <label for="id_brand">Brand:</label>
+            <label class="block font-medium mb-1">Brand</label>
             {{ form.brand }}
             {% for error in form.brand.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
+                <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
         </div>
 
         <div>
-            <label for="id_category">Category:</label>
+            <label class="block font-medium mb-1">Category</label>
             {{ form.category }}
             {% for error in form.category.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
+                <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
         </div>
 
         <div>
-            <label for="id_price">Price:</label>
+            <label class="block font-medium mb-1">Price (₹)</label>
             {{ form.price }}
             {% for error in form.price.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
+                <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
         </div>
 
         <div>
-            <label for="id_discount_price">Discount Price:</label>
-            {{ form.discount_price }}
-            {% for error in form.discount_price.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
-            {% endfor %}
-        </div>
-        <div>
-            <label for="id_offer_percentage">Offer (%):</label>
+            <label class="block font-medium mb-1">Offer Percentage (%)</label>
             {{ form.offer_percentage }}
             {% for error in form.offer_percentage.errors %}
-                <p class="text-red-600 text-sm">{{ error }}</p>
+                <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
             {% endfor %}
+        </div>
+
+        <div class="flex items-center gap-3 mt-7">
+            {{ form.active }}
+            <label class="font-medium">Active Product</label>
         </div>
 
     </div>
 
+    <!-- Description -->
     <div>
-        <label for="id_description">Description:</label>
+        <label class="block font-medium mb-1">Description</label>
         {{ form.description }}
         {% for error in form.description.errors %}
-            <p class="text-red-600 text-sm">{{ error }}</p>
+            <p class="mt-1 text-red-600 text-sm">{{ error }}</p>
         {% endfor %}
     </div>
 
-    <div class="flex items-center gap-2 mt-3">
-        <label for="id_active" class="font-semibold">Active:</label>
-        {{ form.active }}
-        {% if form.active.errors %}
-            <p class="text-red-600 text-sm">{{ form.active.errors.0 }}</p>
-        {% endif %}
-    </div>
-
+    <!-- Upload Images -->
     <div>
-        <label class="font-semibold block mb-2">Upload Product Images (Minimum 3 Images)</label>
-        <input type="file" name="images" id="id_images" multiple required accept="image/*"
-               class="border p-2 rounded w-full bg-white">
+        <label class="block font-medium mb-2">
+            Upload Product Images (Minimum 3)
+        </label>
+
+        <input
+            type="file"
+            id="imageInput"
+            multiple
+            accept="image/*"
+            class="border p-2 rounded w-full bg-white"
+        >
+
+        <p class="text-sm text-gray-500 mt-2">
+            Select images and crop them before saving.
+        </p>
 
         {% if image_errors %}
-            <p class="text-red-600 text-sm mt-1">{{ image_errors }}</p>
+            <p class="text-red-600 text-sm mt-2">{{ image_errors }}</p>
         {% endif %}
     </div>
 
+    <!-- New Cropped Preview -->
+    <div id="previewGrid"
+         class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    </div>
+
+    <!-- Existing Images (Edit Page) -->
     {% if images %}
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {% for img in images %}
-            <div class="relative group">
-                <img src="{{ img.image.url }}" class="h-32 w-full object-cover rounded shadow">
+    <div>
+        <h3 class="font-medium mb-3">Existing Images</h3>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {% for img in images %}
+            <div class="relative group border rounded-lg p-2 bg-white">
+
+                <img src="{{ img.image.url }}"
+                    class="h-32 w-full object-cover rounded shadow">
+
+                {% if img.is_primary %}
+                    <span class="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                        Thumbnail
+                    </span>
+                {% else %}
+                    <a href="{% url 'admin_set_primary_image' img.id %}"
+                    class="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
+                        Set Thumbnail
+                    </a>
+                {% endif %}
+
                 <a href="{% url 'admin_product_image_delete' img.id %}"
-                   class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded opacity-0 
-                   group-hover:opacity-100 transition">
-                   Delete
+                class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                    Delete
                 </a>
+
             </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 
-    <button type="submit"
-            class="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 shadow">
-        {% if product %}Update Product{% else %}Save Product{% endif %}
-    </button>
+    <!-- Hidden Inputs -->
+    <div id="hiddenInputs"></div>
+
+    <!-- Submit -->
+    <div>
+        <button type="submit"
+                class="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 shadow">
+            {% if product %}Update Product{% else %}Save Product{% endif %}
+        </button>
+    </div>
 
 </form>
+
+<!-- Crop Modal -->
+<div id="cropModal"
+     class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+
+    <div class="bg-white p-5 rounded-xl w-[95%] max-w-3xl">
+
+        <h3 class="text-lg font-semibold mb-4">
+            Crop Image
+        </h3>
+
+        <div class="w-full h-[500px] overflow-hidden bg-gray-100 rounded">
+            <img id="cropImage" class="block max-w-full">
+        </div>
+
+        <div class="flex justify-end gap-3 mt-4">
+
+            <button type="button"
+                    id="cancelCrop"
+                    class="px-4 py-2 border rounded hover:bg-gray-100">
+                Cancel
+            </button>
+
+            <button type="button"
+                    id="saveCrop"
+                    class="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800">
+                Crop & Save
+            </button>
+
+        </div>
+    </div>
+</div>
+
+<script>
+let cropper;
+let filesQueue = [];
+let currentIndex = 0;
+
+const imageInput = document.getElementById("imageInput");
+const cropModal = document.getElementById("cropModal");
+const cropImage = document.getElementById("cropImage");
+const previewGrid = document.getElementById("previewGrid");
+const hiddenInputs = document.getElementById("hiddenInputs");
+
+imageInput.addEventListener("change", function(e) {
+    filesQueue = Array.from(e.target.files);
+    currentIndex = 0;
+
+    if (filesQueue.length) {
+        openCropper(filesQueue[currentIndex]);
+    }
+});
+
+function openCropper(file) {
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+
+        cropImage.src = e.target.result;
+
+        cropModal.classList.remove("hidden");
+        cropModal.classList.add("flex");
+
+        setTimeout(() => {
+
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+
+            cropper = new Cropper(cropImage, {
+                viewMode: 1,
+                autoCropArea: 1,
+                movable: true,
+                zoomable: true,
+                scalable: true,
+                responsive: true,
+                background: false
+            });
+
+        }, 300);
+    };
+
+    reader.readAsDataURL(file);
+}
+
+document.getElementById("cancelCrop").addEventListener("click", function () {
+
+    cropModal.classList.add("hidden");
+    cropModal.classList.remove("flex");
+
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+});
+
+document.getElementById("saveCrop").addEventListener("click", function () {
+
+    if (!cropper) {
+        alert("Cropper not initialized.");
+        return;
+    }
+
+    const canvas = cropper.getCroppedCanvas({
+        maxWidth: 1000,
+        maxHeight: 1000,
+        imageSmoothingQuality: "high"
+    });
+
+    if (!canvas) {
+        alert("Unable to crop image.");
+        return;
+    }
+
+    canvas.toBlob(function (blob) {
+
+        if (!blob) {
+            alert("Failed to generate cropped image.");
+            return;
+        }
+
+        const file = new File(
+            [blob],
+            "cropped_" + Date.now() + ".jpg",
+            { type: "image/jpeg" }
+        );
+
+        const dt = new DataTransfer();
+        dt.items.add(file);
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.name = "images";
+        input.files = dt.files;
+        input.hidden = true;
+
+        hiddenInputs.appendChild(input);
+
+        const url = URL.createObjectURL(blob);
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative";
+
+        wrapper.innerHTML = `
+            <img src="${url}"
+                class="h-32 w-full object-cover rounded shadow">
+
+            <button type="button"
+                class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                X
+            </button>
+        `;
+
+        const btn = wrapper.querySelector("button");
+
+        btn.addEventListener("click", function(){
+
+            wrapper.remove();
+            input.remove();
+
+        });
+
+        previewGrid.appendChild(wrapper);
+
+        currentIndex++;
+
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+
+        if (currentIndex < filesQueue.length) {
+            openCropper(filesQueue[currentIndex]);
+        } else {
+            cropModal.classList.add("hidden");
+            cropModal.classList.remove("flex");
+        }
+
+    }, "image/jpeg", 0.9);
+});
+document.querySelector("form").addEventListener("submit", function(e){
+
+    const totalImages =
+        hiddenInputs.querySelectorAll('input[name="images"]').length;
+
+    {% if not product %}
+    if(totalImages < 3){
+        e.preventDefault();
+        alert("Please crop and save at least 3 images.");
+        return;
+    }
+    {% endif %}
+});
+
+</script>
 
 {% endblock %}

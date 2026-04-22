@@ -11,7 +11,7 @@ from coupons.models import Coupon
 from wallet.models import Wallet, WalletTransaction
 from django.core.paginator import Paginator
 from products.forms import BrandForm,CategoryForm,ProductForm,ColorVariantForm
-from products.utils import resize_image
+from products.utils import resize_image, get_best_offer, get_best_price
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -19,6 +19,7 @@ from datetime import timedelta
 from django.utils import timezone
 from .utils import get_filtered_orders,generate_sales_excel, generate_sales_pdf
 from django.db.models.functions import TruncDate, TruncMonth
+from orders.views import calculate_item_refund
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -214,8 +215,8 @@ def product_add(request):
             })
         if form.is_valid():
             product = form.save()
-            for img in images:
-                img_obj = ProductImage.objects.create(product=product,image=img)
+            for i, img in enumerate(images):
+                img_obj = ProductImage.objects.create(product=product,image=img,is_primary=(i == 0))
                 resize_image(img_obj.image.path)
             messages.success(request, "Product added. Add color variants.")
             return redirect("admin_color_variant_add", product.id)
@@ -226,6 +227,17 @@ def product_add(request):
         "form": form,
         "product": None,
     })
+
+@never_cache
+@login_required(login_url='admin_login')
+def set_primary_image(request, img_id):
+    img = get_object_or_404(ProductImage, id=img_id)
+    product = img.product
+    ProductImage.objects.filter(product=product).update(is_primary=False)
+    img.is_primary = True
+    img.save()
+    messages.success(request, "Thumbnail updated successfully.")
+    return redirect("admin_product_edit", product.id)
 
 @never_cache
 @login_required(login_url='admin_login')
@@ -288,6 +300,10 @@ def product_list(request):
     search = request.GET.get("search", "")
     products = Product.objects.filter(Q(name__icontains=search)|Q(brand__name__icontains=search)
                                       |Q(category__name__icontains=search),).annotate(total_stock=Sum("colors__stock")).order_by("-created_at")
+    for product in products:
+        product.best_offer = get_best_offer(product)
+        product.final_price = get_best_price(product)
+
     paginator = Paginator(products, 4)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -305,14 +321,6 @@ def product_delete(request, pk):
     product.save()
     messages.success(request, "Product removed successfully.")
     return redirect("admin_products")
-
-def crop_center(image, crop_width, crop_height):
-    width, height = image.size
-    left = (width - crop_width) // 2
-    top = (height - crop_height) // 2
-    right = (width + crop_width) // 2
-    bottom = (height + crop_height) // 2
-    return image.crop((left, top, right, bottom))
 
 def product_image_delete(request, img_id):
     img = get_object_or_404(ProductImage, id=img_id)
@@ -352,7 +360,7 @@ def admin_order_list(request):
 @login_required(login_url='admin_login')
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
-    order_items = order.items.all()
+    order_items = order.items.select_related("product","color_variant").prefetch_related("product__images")
     if request.method == "POST":
 
         new_status = request.POST.get("status")
@@ -426,6 +434,7 @@ def admin_return_list(request):
 def admin_handle_return(request, item_id):
     action = request.POST.get("action")
     item = get_object_or_404(OrderItem, id=item_id)
+    order = item.order
     if item.return_status != "Requested":
         messages.error(request, "This return request is already processed.")
         return redirect("admin_return_list")
@@ -434,9 +443,10 @@ def admin_handle_return(request, item_id):
             item.color_variant.stock += item.quantity
             item.color_variant.save()
         item.return_status = "Approved"
+        item.status = "returned"
         item.save()
         wallet, _ = Wallet.objects.get_or_create(user=item.order.user)
-        refund_amount = item.total_price
+        refund_amount = calculate_item_refund(order, item)
         wallet.balance += refund_amount
         wallet.save()
         WalletTransaction.objects.create(user=item.order.user,amount=refund_amount,transaction_type="credit",

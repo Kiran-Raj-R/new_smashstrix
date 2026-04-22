@@ -3,24 +3,29 @@
 
 {% block content %}
 <div class="p-8">
+
     <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-bold text-gray-800 uppercase tracking-tight">Products</h2>
+        <h2 class="text-3xl font-bold text-gray-800 uppercase tracking-tight">
+            Products
+        </h2>
 
         <a href="{% url 'admin_product_add' %}"
-           class="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-md flex items-center">
-            <span class="mr-2">+</span> Add Product
+           class="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium shadow-md">
+            + Add Product
         </a>
     </div>
 
     <div class="bg-white shadow-xl rounded-xl overflow-x-auto border border-gray-100">
+
         <table class="w-full text-left table-auto">
+
             <thead class="bg-gray-50 border-b">
                 <tr class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
                     <th class="p-5">Image</th>
                     <th class="p-5">Product</th>
                     <th class="p-5">Brand</th>
                     <th class="p-5">Category</th>
-                    <th class="p-5">Price</th>
+                    <th class="p-5">Pricing</th>
                     <th class="p-5 text-center">Stock</th>
                     <th class="p-5 text-center">Status</th>
                     <th class="p-5 text-right">Actions</th>
@@ -28,12 +33,15 @@
             </thead>
 
             <tbody class="divide-y divide-gray-100">
+
                 {% for product in products %}
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="hover:bg-gray-50 transition">
+
+                    <!-- Image -->
                     <td class="p-5">
-                        {% if product.images.first %}
-                            <img src="{{ product.images.first.image.url }}"
-                                 class="h-16 w-16 object-cover rounded-lg border shadow-sm">
+                        {% if product.thumbnail %}
+                            <img src="{{ product.thumbnail.image.url }}"
+                                 class="h-16 w-16 object-contain rounded-lg border bg-white shadow-sm">
                         {% else %}
                             <div class="h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">
                                 No Image
@@ -41,98 +49,160 @@
                         {% endif %}
                     </td>
 
-                    <td class="p-5 font-bold text-gray-800">{{ product.name }}</td>
-                    <td class="p-5 text-gray-700">{{ product.brand.name }}</td>
-                    <td class="p-5 text-gray-700">{{ product.category.name }}</td>
+                    <!-- Product -->
+                    <td class="p-5 font-bold text-gray-800">
+                        {{ product.name }}
+                    </td>
 
+                    <!-- Brand -->
+                    <td class="p-5 text-gray-700">
+                        {{ product.brand.name }}
+                    </td>
+
+                    <!-- Category -->
+                    <td class="p-5 text-gray-700">
+                        {{ product.category.name }}
+                    </td>
+
+                    <!-- Pricing -->
                     <td class="p-5">
-                        <div class="font-bold text-green-700">₹ {{ product.price }}</div>
-                        {% if product.discount_price %}
-                            <div class="text-xs text-gray-400">Discount: ₹ {{ product.discount_price }}</div>
+
+                        {% if product.best_offer > 0 %}
+
+                            <p class="text-green-700 font-bold">
+                                ₹{{ product.final_price|floatformat:2 }}
+                            </p>
+
+                            <p class="text-gray-400 line-through text-sm">
+                                ₹{{ product.price|floatformat:2 }}
+                            </p>
+
+                            <span class="inline-block mt-1 px-2 py-1 bg-red-100 text-red-600 text-xs rounded-full font-semibold">
+                                {{ product.best_offer }}% OFF
+                            </span>
+
+                        {% else %}
+
+                            <p class="text-green-700 font-bold">
+                                ₹{{ product.price|floatformat:2 }}
+                            </p>
+
                         {% endif %}
+
                     </td>
 
+                    <!-- Stock -->
                     <td class="p-5 text-center">
+
                         {% if product.total_stock and product.total_stock > 0 %}
-                            <span class="font-bold text-green-700">{{ product.total_stock }}</span>
+                            <span class="font-bold text-green-700">
+                                {{ product.total_stock }}
+                            </span>
                         {% else %}
-                            <span class="text-rose-600 font-bold uppercase text-xs">Out of Stock</span>
+                            <span class="text-rose-600 font-bold text-xs uppercase">
+                                Out of Stock
+                            </span>
                         {% endif %}
+
                     </td>
 
+                    <!-- Status -->
                     <td class="p-5 text-center">
+
                         {% if product.active %}
-                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-green-100 text-green-700">Active</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                Active
+                            </span>
                         {% else %}
-                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-rose-100 text-rose-700">Inactive</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                                Inactive
+                            </span>
                         {% endif %}
+
                     </td>
 
+                    <!-- Actions -->
                     <td class="p-5 text-right">
+
                         <div class="inline-flex space-x-2">
+
                             <a href="{% url 'admin_product_edit' product.id %}"
-                               class="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-md text-xs font-bold transition-all border border-indigo-200 uppercase">
+                               class="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-md text-xs font-bold border border-indigo-200">
                                 Edit
                             </a>
+
                             <a href="{% url 'admin_color_variant_add' product.id %}"
-                               class="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-md text-xs font-bold transition-all border border-amber-200 uppercase">
+                               class="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-md text-xs font-bold border border-amber-200">
                                 Variants
                             </a>
+
                             <button onclick="confirmDelete('{% url 'admin_product_delete' product.id %}')"
-                                    class="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-md text-xs font-bold transition-all border border-rose-200 uppercase">
+                                    class="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-md text-xs font-bold border border-rose-200">
                                 Delete
                             </button>
+
                         </div>
+
                     </td>
+
                 </tr>
+
                 {% empty %}
+
                 <tr>
                     <td colspan="8" class="p-12 text-center text-gray-400 italic">
                         No products added yet.
                     </td>
                 </tr>
+
                 {% endfor %}
+
             </tbody>
+
         </table>
 
+        <!-- Pagination -->
         {% if products.has_other_pages %}
-        <div class="p-6 bg-gray-50 border-t flex justify-center items-center gap-3">
+        <div class="p-6 bg-gray-50 border-t flex justify-center gap-2">
+
             {% if products.has_previous %}
-                <a href="?page={{ products.previous_page_number }}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                <a href="?page={{ products.previous_page_number }}"
+                   class="px-4 py-2 bg-white border rounded-lg text-sm">
                     Prev
                 </a>
             {% endif %}
 
-            <div class="flex gap-1">
-                {% for i in products.paginator.page_range %}
-                    {% if products.number == i %}
-                        <span class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold shadow-md">
-                            {{ i }}
-                        </span>
-                    {% else %}
-                        <a href="?page={{ i }}{% if search %}&search={{ search }}{% endif %}"
-                           class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            {{ i }}
-                        </a>
-                    {% endif %}
-                {% endfor %}
-            </div>
+            {% for i in products.paginator.page_range %}
+
+                {% if products.number == i %}
+                    <span class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold">
+                        {{ i }}
+                    </span>
+                {% else %}
+                    <a href="?page={{ i }}"
+                       class="px-4 py-2 bg-white border rounded-lg text-sm">
+                        {{ i }}
+                    </a>
+                {% endif %}
+
+            {% endfor %}
 
             {% if products.has_next %}
-                <a href="?page={{ products.next_page_number }}{% if search %}&search={{ search }}{% endif %}"
-                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                <a href="?page={{ products.next_page_number }}"
+                   class="px-4 py-2 bg-white border rounded-lg text-sm">
                     Next
                 </a>
             {% endif %}
+
         </div>
         {% endif %}
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function confirmDelete(url) {
+function confirmDelete(url){
     Swal.fire({
         title: "Delete Product?",
         text: "This action cannot be undone!",
@@ -140,12 +210,13 @@ function confirmDelete(url) {
         showCancelButton: true,
         confirmButtonColor: "#dc2626",
         cancelButtonColor: "#6b7280",
-        confirmButtonText: "Yes, Delete",
-    }).then((result) => {
-        if (result.isConfirmed) {
+        confirmButtonText: "Yes, Delete"
+    }).then((result)=>{
+        if(result.isConfirmed){
             window.location.href = url;
         }
     });
 }
 </script>
+
 {% endblock %}
