@@ -14,7 +14,8 @@ from wishlist.models import WishlistItem
 
 
 def home(request):
-    return render(request, "user/home.html")
+    brands = Brand.objects.filter(active=True)[:4]
+    return render(request, "user/home.html",{'brands':brands})
 
 def shop(request):
     products = Product.objects.filter(active=True)
