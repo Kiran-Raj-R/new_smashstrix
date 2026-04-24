@@ -17,19 +17,20 @@
     <div class="border rounded-xl p-4 flex items-center justify-between">
 
       <div class="flex items-center gap-4">
-
-        {% if item.product.images.first %}
-        <img
-          src="{{ item.product.images.first.image.url }}"
-          class="w-20 h-20 object-cover rounded"
-        >
-        {% endif %}
-
+        <a href="{% url 'product_detail' item.product.id %}">
+          {% if item.product.thumbnail %} 
+          <img
+            src="{{ item.product.thumbnail.image.url }}"
+            class="w-20 h-20 object-cover rounded"
+          >
+          {% endif %}
+        </a>
         <div>
 
-          <p class="font-semibold">
-            {{ item.product.name }}
-          </p>
+          <a href="{% url 'product_detail' item.product.id %}"
+            class="font-semibold hover:text-blue-600 transition">
+              {{ item.product.name }}
+          </a>
 
           {% if item.color_variant %}
           <p class="text-sm text-gray-500">

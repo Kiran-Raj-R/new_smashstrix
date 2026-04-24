@@ -24,21 +24,23 @@
       <div id="item-row-{{ item.id }}" class="flex gap-6 border rounded-xl p-4 bg-white shadow-sm">
 
         <!-- IMAGE -->
-        <div class="w-28 h-28 flex-shrink-0">
+        <a href="{% url 'product_detail' item.product.id %}"
+            class="w-28 h-28 flex-shrink-0 block">
           {% if item.product.thumbnail %}
           <img src="{{ item.product.thumbnail.image.url }}"/>
           {% else %}
           <img src="{% static 'img/noimage.png' %}"
                class="w-full h-full object-contain rounded">
           {% endif %}
-        </div>
+      </a>
 
         <!-- DETAILS -->
         <div class="flex-1">
 
-          <h2 class="font-semibold text-lg">
-            {{ item.product.name }}
-          </h2>
+          <a href="{% url 'product_detail' item.product.id %}"
+            class="font-semibold text-lg hover:text-blue-600 transition">
+              {{ item.product.name }}
+          </a>
 
           {% if item.color_variant %}
           <p class="text-sm text-gray-500 mt-1">
