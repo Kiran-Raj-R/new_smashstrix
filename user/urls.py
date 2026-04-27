@@ -16,4 +16,6 @@ urlpatterns = [
     path('addresses/delete/<int:pk>/',views.address_delete,name='address_delete'),
     path("addresses/default/<int:pk>/", views.address_set_default, name="address_set_default"),
 
+    path("product/<int:product_id>/review/",views.submit_review,name="submit_review"),
+
 ]

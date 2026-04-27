@@ -20,7 +20,7 @@ def home(request):
     return render(request, "user/home.html",{'brands':brands})
 
 def shop(request):
-    products = Product.objects.filter(active=True)
+    products = Product.objects.filter(active=True).annotate(avg_rating=Avg("reviews__rating"),review_count=Count("reviews"))
     q = request.GET.get("q")
     if q:
         products = products.filter(name__icontains=q)
@@ -125,6 +125,24 @@ def product_detail(request, product_id):
         "user_review": user_review,
     }
     return render(request,"user/product_detail.html", context)
+
+@login_required(login_url="login")
+def submit_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    purchased = OrderItem.objects.filter(order__user=request.user,order__status="delivered",product=product).exists()
+
+    if not purchased:
+        messages.error(request, "Only verified buyers can review.")
+        return redirect("product_detail", product_id=product.id)
+
+    if request.method == "POST":
+        rating = int(request.POST.get("rating"))
+        comment = request.POST.get("comment", "").strip()
+        ProductReview.objects.update_or_create(product=product,user=request.user,
+            defaults={"rating": rating,"comment": comment})
+        messages.success(request, "Review submitted successfully.")
+
+    return redirect("product_detail", product_id=product.id)
 
 @login_required(login_url="login")
 def user_profile(request):

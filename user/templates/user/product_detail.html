@@ -6,21 +6,11 @@
 
     <!-- Breadcrumb -->
     <nav class="text-sm text-gray-500 mb-6">
-        <a href="{% url 'home' %}" class="hover:text-blue-600 transition">
-            Home
-        </a>
-
+        <a href="{% url 'home' %}" class="hover:text-blue-600 transition">Home</a>
         <span class="mx-2">/</span>
-
-        <a href="{% url 'shop' %}" class="hover:text-blue-600 transition">
-            Shop
-        </a>
-
+        <a href="{% url 'shop' %}" class="hover:text-blue-600 transition">Shop</a>
         <span class="mx-2">/</span>
-
-        <span class="text-gray-800 font-semibold">
-            {{ product.name }}
-        </span>
+        <span class="text-gray-800 font-semibold">{{ product.name }}</span>
     </nav>
 
     <!-- Product Section -->
@@ -77,10 +67,23 @@
                 {{ product.name }}
             </h1>
 
-            <!-- Rating -->
-            <div class="flex items-center gap-2">
-                <div class="text-yellow-400 text-lg">★★★★☆</div>
-                <span class="text-sm text-gray-500">(23 reviews)</span>
+            <!-- Dynamic Rating -->
+            <div class="flex items-center gap-3">
+
+                <div class="text-yellow-400 text-lg tracking-wide">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= avg_rating|floatformat:0|add:"0" %}
+                            ★
+                        {% else %}
+                            ☆
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <span class="text-sm text-gray-500">
+                    {{ avg_rating|floatformat:1 }}/5 ({{ total_reviews }} reviews)
+                </span>
+
             </div>
 
             <!-- Pricing -->
@@ -110,7 +113,7 @@
 
             </div>
 
-            <!-- Description Preview -->
+            <!-- Description -->
             <p class="text-gray-600 leading-relaxed">
                 {{ product.description|truncatechars:180 }}
             </p>
@@ -121,9 +124,7 @@
                   class="space-y-4 pt-2">
 
                 {% csrf_token %}
-                <input type="hidden"
-                       name="product_id"
-                       value="{{ product.id }}">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
 
                 <!-- Variant -->
                 <div>
@@ -181,9 +182,7 @@
                   action="{% url 'add_to_wishlist' %}">
 
                 {% csrf_token %}
-                <input type="hidden"
-                       name="product_id"
-                       value="{{ product.id }}">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
 
                 <button type="submit"
                     class="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-700 transition">
@@ -199,7 +198,6 @@
     <div class="mt-10 bg-white border rounded-2xl shadow-sm p-6">
 
         <div class="flex gap-8 border-b mb-5">
-
             <button id="tabDesc"
                 class="font-semibold text-blue-700 border-b-2 border-blue-700 pb-2">
                 Description
@@ -209,7 +207,6 @@
                 class="text-gray-600 hover:text-blue-600 pb-2">
                 Reviews
             </button>
-
         </div>
 
         <!-- Description -->
@@ -220,26 +217,133 @@
         </div>
 
         <!-- Reviews -->
-        <div id="reviewContent" class="hidden space-y-4">
+        <div id="reviewContent" class="hidden">
 
-            <div class="p-4 bg-gray-50 rounded-xl border">
-                <div class="flex justify-between">
-                    <strong>John D.</strong>
-                    <span class="text-yellow-400">★★★★★</span>
-                </div>
-                <p class="text-gray-600 mt-2">
-                    Excellent quality and balance!
+            <!-- Review Form -->
+            <div class="border rounded-2xl p-6 bg-gray-50 mb-6">
+
+                <h3 class="text-xl font-semibold mb-4">
+                    Write a Review
+                </h3>
+
+                {% if can_review %}
+
+                <form method="POST"
+                      action="{% url 'submit_review' product.id %}"
+                      class="space-y-4">
+
+                    {% csrf_token %}
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Your Rating
+                        </label>
+
+                        <select name="rating"
+                            required
+                            class="border rounded-xl px-3 py-2 w-full">
+
+                            <option value="">Choose Rating</option>
+
+                            <option value="5" {% if user_review.rating == 5 %}selected{% endif %}>★★★★★ Excellent</option>
+                            <option value="4" {% if user_review.rating == 4 %}selected{% endif %}>★★★★☆ Very Good</option>
+                            <option value="3" {% if user_review.rating == 3 %}selected{% endif %}>★★★☆☆ Good</option>
+                            <option value="2" {% if user_review.rating == 2 %}selected{% endif %}>★★☆☆☆ Fair</option>
+                            <option value="1" {% if user_review.rating == 1 %}selected{% endif %}>★☆☆☆☆ Poor</option>
+
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">
+                            Comment (Optional)
+                        </label>
+
+                        <textarea name="comment"
+                            rows="4"
+                            class="border rounded-xl px-3 py-2 w-full"
+                            placeholder="Share your experience...">{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
+                    </div>
+
+                    <button type="submit"
+                        class="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition">
+
+                        {% if user_review %}
+                            Update Review
+                        {% else %}
+                            Submit Review
+                        {% endif %}
+
+                    </button>
+
+                </form>
+
+                {% elif request.user.is_authenticated %}
+
+                <p class="text-sm text-gray-500">
+                    Only customers who purchased and received this product can review it.
                 </p>
+
+                {% else %}
+
+                <p class="text-sm text-gray-500">
+                    <a href="{% url 'login' %}" class="text-blue-600 hover:underline">
+                        Login
+                    </a>
+                    to write a review.
+                </p>
+
+                {% endif %}
+
             </div>
 
-            <div class="p-4 bg-gray-50 rounded-xl border">
-                <div class="flex justify-between">
-                    <strong>Rahul K.</strong>
-                    <span class="text-yellow-400">★★★★☆</span>
+            <!-- Review List -->
+            <div class="space-y-4">
+
+                {% for review in reviews %}
+
+                <div class="p-5 bg-white rounded-xl border">
+
+                    <div class="flex justify-between items-start">
+
+                        <div>
+                            <p class="font-semibold text-gray-800">
+                                {{ review.user.username|default:review.user.email }}
+                            </p>
+
+                            <div class="text-yellow-400 text-sm mt-1">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}
+                                        ★
+                                    {% else %}
+                                        ☆
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-gray-400">
+                            {{ review.created_at|date:"d M Y" }}
+                        </p>
+
+                    </div>
+
+                    {% if review.comment %}
+                    <p class="text-gray-700 mt-3 leading-relaxed">
+                        {{ review.comment }}
+                    </p>
+                    {% endif %}
+
                 </div>
-                <p class="text-gray-600 mt-2">
-                    Worth the price.
-                </p>
+
+                {% empty %}
+
+                <div class="text-sm text-gray-500">
+                    No reviews yet. Be the first to review this product.
+                </div>
+
+                {% endfor %}
+
             </div>
 
         </div>
@@ -271,13 +375,7 @@
                     {{ rp.name }}
                 </h3>
 
-                <div class="text-yellow-400 text-sm mt-1">
-                    ★★★★☆
-                    <span class="text-gray-500">(18)</span>
-                </div>
-
                 {% if rp.best_offer > 0 %}
-
                     <p class="text-green-700 font-bold mt-2">
                         ₹{{ rp.final_price|floatformat:2 }}
                     </p>
@@ -289,13 +387,10 @@
                     <p class="text-red-500 text-xs">
                         {{ rp.best_offer }}% OFF
                     </p>
-
                 {% else %}
-
                     <p class="text-green-700 font-bold mt-2">
                         ₹{{ rp.price|floatformat:2 }}
                     </p>
-
                 {% endif %}
 
             </a>
@@ -321,7 +416,23 @@ Object.keys(tabs).forEach(id => {
             document.getElementById(content).classList.add("hidden")
         );
 
+        Object.keys(tabs).forEach(btn => {
+            document.getElementById(btn).classList.remove(
+                "text-blue-700",
+                "border-b-2",
+                "border-blue-700",
+                "font-semibold"
+            );
+        });
+
         document.getElementById(tabs[id]).classList.remove("hidden");
+
+        document.getElementById(id).classList.add(
+            "text-blue-700",
+            "border-b-2",
+            "border-blue-700",
+            "font-semibold"
+        );
     };
 });
 
@@ -347,13 +458,11 @@ function updateMainImage() {
     zoomContainer.style.backgroundImage = `url(${thumbs[index].src})`;
 }
 
-/* Prev */
 document.getElementById("prevBtn").onclick = () => {
     index = (index - 1 + thumbs.length) % thumbs.length;
     thumbs[index].click();
 };
 
-/* Next */
 document.getElementById("nextBtn").onclick = () => {
     index = (index + 1) % thumbs.length;
     thumbs[index].click();
