@@ -8,7 +8,6 @@ djangorestframework
 oauthlib
 requests-oauthlib
 reportlab
-reportlab openpyxl
 psycopg2-binary
 dj-database-url
-django-storages boto3
+django-storages
