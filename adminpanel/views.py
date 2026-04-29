@@ -216,7 +216,8 @@ def product_add(request):
         if form.is_valid():
             product = form.save()
             for i, img in enumerate(images):
-                img_obj = ProductImage.objects.create(product=product,image=img,is_primary=(i == 0))
+                img_obj = ProductImage.objects.create(product=product,is_primary=(i == 0))
+                img_obj.image = img
                 resize_image(img_obj.image)
                 img_obj.save()
             messages.success(request, "Product added. Add color variants.")
