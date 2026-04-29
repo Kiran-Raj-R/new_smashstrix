@@ -64,12 +64,15 @@ A full-featured e-commerce web application built using Django, featuring product
 ### 1. Clone Repository
 
 git clone https://github.com/Kiran-Raj-R/new_smashstrix.git
+
 cd new_smashstrix
 
 ### 2. Create Virtual Environment
 
 python -m venv venv
+
 source venv/bin/activate   # Linux/Mac
+
 venv\Scripts\activate      # Windows
 
 ### 3. Install Dependencies
@@ -79,6 +82,7 @@ pip install -r requirements.txt
 ### 4. Create `.env` File
 
 SECRET_KEY=your_secret_key
+
 DEBUG=True
 
 DATABASE_URL=your_postgresql_url
