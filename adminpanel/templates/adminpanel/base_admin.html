@@ -11,6 +11,25 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+  <style>
+    .errorlist{
+        list-style:none;
+        margin-top:8px;
+        padding:0;
+    }
+
+    .errorlist li{
+        background:#fef2f2;
+        border:1px solid #fca5a5;
+        color:#b91c1c;
+        padding:10px 12px;
+        border-radius:8px;
+        font-size:14px;
+        margin-top:6px;
+        font-weight:500;
+    }
+  </style>
+
 </head>
 <body class="bg-gray-100 text-gray-900 font-inter">
 
@@ -58,15 +77,21 @@
             <span>Returns</span>
         </a>
 
-        <a class="flex items-center gap-2 px-6 py-3 hover:bg-blue-800 transition">
+        <a href="{% url 'sales_report' %}"class="flex items-center gap-2 px-6 py-3 hover:bg-blue-800 transition">
           <i class="ri-bar-chart-box-line"></i>
           <span>Sales</span>
         </a>
 
-        <a class="flex items-center gap-2 px-6 py-3 hover:bg-blue-800 transition">
+        <a href="{% url 'coupon_list' %}"class="flex items-center gap-2 px-6 py-3 hover:bg-blue-800 transition">
           <i class="ri-coupon-3-line"></i>
           <span>Coupons</span>
         </a>
+
+        <a href="{% url 'admin_wallet_transactions' %}"
+        class="flex items-center gap-2 px-6 py-3 hover:bg-blue-800 transition">
+        <i class="ri-wallet-3-line"></i>
+        <span>Wallet</span>
+      </a>
       </nav>
 
       <div class="p-4 border-t border-blue-700">

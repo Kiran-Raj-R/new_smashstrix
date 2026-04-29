@@ -53,34 +53,33 @@
   <p class="mt-2 text-gray-600">NOW IN SmashStrix!</p>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
-    <div class="p-4 border rounded bg-white shadow">
-      <img src="{% static 'user/images/yonex.png' %}" alt="Yonex" class="mx-auto h-16">
-      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
+
+        {% for brand in brands %}
+        <a href="{% url 'shop' %}?brand={{ brand.id }}"
+           class="block p-4 border rounded-xl bg-white shadow hover:shadow-md hover:-translate-y-1 transition">
+
+            {% if brand.logo %}
+            <img src="{{ brand.logo.url }}"
+                 alt="{{ brand.name }}"
+                 class="mx-auto h-16 object-contain">
+            {% endif %}
+
+            <p class="mt-3 font-semibold text-gray-800">
+                {{ brand.name }}
+            </p>
+
+            {% if brand.offer_percentage > 0 %}
+            <p class="mt-1 text-sm font-semibold text-green-600">
+                Flat {{ brand.offer_percentage }}% OFF
+            </p>
+            {% endif %}
+
+        </a>
+        {% endfor %}
+
     </div>
 
-    <div class="p-4 border rounded bg-white shadow">
-      <img src="{% static 'user/images/lining.jpeg' %}" alt="Li-Ning" class="mx-auto h-16">
-      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
-    </div>
-
-    <div class="p-4 border rounded bg-white shadow">
-      <img src="{% static 'user/images/ashaway.png' %}" alt="Ashaway" class="mx-auto h-16">
-      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
-    </div>
-
-    <div class="p-4 border rounded bg-white shadow">
-      <img src="{% static 'user/images/apacs.png' %}" alt="Apacs" class="mx-auto h-16">
-      <p class="mt-2 font-semibold text-green-600">FLAT 15% OFF</p>
-    </div>
-  </div>
 </section>
 
-<section class="bg-gray-100 py-10 text-center">
-  <h2 class="text-2xl font-semibold">Subscribe now and be the first to know about exclusive offers!</h2>
-  <form class="mt-4 flex justify-center">
-    <input type="email" placeholder="Enter your email" class="p-2 border rounded-l w-64">
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-r">Subscribe</button>
-  </form>
-</section>
 
 {% endblock %}

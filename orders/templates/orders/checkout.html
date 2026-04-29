@@ -1,179 +1,478 @@
 {% extends "base.html" %}
 {% load static %}
+{% load product_filters %}
 
 {% block content %}
-<div class="container mx-auto py-10">
+<div class="container mx-auto px-4 py-10">
 
-  <h2 class="text-2xl font-bold mb-8">Checkout</h2>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-    <!-- LEFT SIDE -->
-    <div class="lg:col-span-2 space-y-8">
-
-      <div class="bg-white p-6 rounded-xl shadow border">
-        <h3 class="text-lg font-semibold mb-4">Select Delivery Address</h3>
-
-        {% if addresses %}
-        <form method="POST" action="{% url 'place_order' %}">
-          {% csrf_token %}
-
-          <div class="space-y-4">
-            {% for address in addresses %}
-            <label class="block border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
-              <div class="flex items-start gap-3">
-                <input type="radio"
-                       name="address_id"
-                       value="{{ address.id }}"
-                       {% if address.is_default %}checked{% endif %}
-                       required
-                       class="mt-1">
-
-                <div>
-                  <p class="font-semibold">{{ address.full_name }}</p>
-                  <p class="text-sm text-gray-600">
-                    {{ address.address_line }},
-                    {{ address.city }},
-                    {{ address.state }} -
-                    {{ address.pincode }}
-                  </p>
-                  <p class="text-sm text-gray-600">
-                    Phone: {{ address.phone }}
-                  </p>
-                </div>
-              </div>
-            </label>
-            {% endfor %}
-          </div>
-
-          <div class="mt-4">
-            <a href="{% url 'address_add' %}"
-               class="text-blue-600 hover:underline text-sm">
-               + Add New Address
-            </a>
-          </div>
-            <div class="mt-10">
-            <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
-
-            <div class="space-y-4">
-                <div class="flex items-center justify-between border rounded-lg p-4 bg-green-50 border-green-400">
-                <div>
-                    <p class="font-semibold text-green-700">Cash on Delivery (COD)</p>
-                    <p class="text-sm text-gray-600">
-                    Pay when your order is delivered to your doorstep.
-                    </p>
-                </div>
-
-                <span class="text-sm font-medium text-green-700">
-                    Available
-                </span>
-                </div>
-                <div class="flex items-center justify-between border rounded-lg p-4 opacity-50 cursor-not-allowed">
-                <div>
-                    <p class="font-semibold">Online Payment</p>
-                    <p class="text-sm text-gray-600">
-                    Credit/Debit Card, UPI, Netbanking
-                    </p>
-                </div>
-
-                <span class="text-sm font-medium text-gray-500">
-                    Coming Soon
-                </span>
-                </div>
-
-            </div>
-            </div>
-
-          <div class="mt-10">
-            <h3 class="text-lg font-semibold mb-4">Order Items</h3>
-
-            <div class="space-y-4">
-              {% for item in cart_items %}
-              <div class="flex items-center justify-between border rounded-lg p-4">
-
-                <div class="flex items-center gap-4">
-                  {% if item.product.images.first %}
-                  <img src="{{ item.product.images.first.image.url }}"
-                       class="w-16 h-16 object-cover rounded">
-                  {% endif %}
-
-                  <div>
-                    <p class="font-semibold">{{ item.product.name }}</p>
-                    <p class="text-sm text-gray-600">
-                      Color: {{ item.color_variant.color }}
-                    </p>
-                    <p class="text-sm text-gray-600">
-                      Qty: {{ item.quantity }}
-                    </p>
-                  </div>
-                </div>
-
-                <p class="font-semibold text-green-700">
-                  ₹{{ item.product.discount_price|default:item.product.price }}
-                </p>
-
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="lg:hidden mt-10">
-            <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
-          </div>
-
-        {% else %}
-          <p class="text-gray-600">No saved addresses found.</p>
-          <a href="{% url 'address_add' %}"
-             class="text-blue-600 hover:underline">
-             Add Address
-          </a>
-        {% endif %}
-
-      </div>
+    <!-- Heading -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">
+            Checkout
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+            Review your order and complete payment securely.
+        </p>
     </div>
 
-    <div>
-      <div class="bg-white p-6 rounded-xl shadow border sticky top-6">
+    <form method="POST" action="{% url 'place_order' %}" id="checkoutForm">
+        {% csrf_token %}
 
-        <h3 class="text-lg font-semibold mb-4">Order Summary</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        <div class="space-y-3 text-sm">
+            <!-- LEFT SIDE -->
+            <div class="lg:col-span-2 space-y-8">
 
-          <div class="flex justify-between">
-            <span>Subtotal</span>
-            <span>₹{{ subtotal }}</span>
-          </div>
+                <!-- ADDRESS -->
+                <div class="bg-white border rounded-2xl shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-5">
+                        <h2 class="text-lg font-semibold text-gray-800">
+                            Delivery Address
+                        </h2>
 
-          <div class="flex justify-between">
-            <span>Tax (5%)</span>
-            <span>₹{{ tax|floatformat:2 }}</span>
-          </div>
+                        <a href="{% url 'address_add' %}?next={% url 'checkout' %}"
+                           class="text-sm text-blue-600 hover:underline">
+                            + Add New
+                        </a>
+                    </div>
 
-          <div class="flex justify-between">
-            <span>Shipping</span>
-            <span>₹{{ shipping }}</span>
-          </div>
+                    {% if addresses %}
+                        <div class="space-y-4">
 
-          <hr>
+                            {% for address in addresses %}
+                            <label class="block border rounded-xl p-4 cursor-pointer hover:border-blue-500 transition">
 
-          <div class="flex justify-between font-bold text-lg">
-            <span>Total</span>
-            <span class="text-green-700">₹{{ total|floatformat:2 }}</span>
-          </div>
+                                <div class="flex gap-3 items-start">
+
+                                    <input type="radio"
+                                           name="address_id"
+                                           value="{{ address.id }}"
+                                           {% if address.is_default %}checked{% endif %}
+                                           required
+                                           class="mt-1">
+
+                                    <div class="text-sm">
+                                        <p class="font-semibold text-gray-800">
+                                            {{ address.full_name }}
+                                        </p>
+
+                                        <p class="text-gray-600 mt-1">
+                                            {{ address.address_line }},
+                                            {{ address.city }},
+                                            {{ address.state }} -
+                                            {{ address.pincode }}
+                                        </p>
+
+                                        <p class="text-gray-500 mt-1">
+                                            Phone: {{ address.phone }}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </label>
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="border rounded-xl p-6 text-center">
+                            <p class="text-gray-500 mb-3">
+                                No address added yet.
+                            </p>
+
+                            <a href="{% url 'address_add' %}?next={% url 'checkout' %}"
+                               class="text-blue-600 hover:underline text-sm">
+                                Add Address to Continue
+                            </a>
+                        </div>
+
+                    {% endif %}
+                </div>
+
+                <!-- PAYMENT -->
+                <div class="bg-white border rounded-2xl shadow-sm p-6">
+
+                    <h2 class="text-lg font-semibold text-gray-800 mb-5">
+                        Payment Method
+                    </h2>
+
+                    <!-- COD -->
+                    <label class="flex items-center gap-3 border rounded-xl p-4
+                        {% if total > 1000 %}opacity-50 cursor-not-allowed{% endif %}">
+
+                        <input type="radio"
+                               name="payment_method"
+                               value="COD"
+                               {% if total <= 1000 %}checked{% endif %}
+                               {% if total > 1000 %}disabled{% endif %}>
+
+                        <span class="font-medium">Cash on Delivery</span>
+
+                    </label>
+
+                    {% if total > 1000 %}
+                    <p class="text-xs text-red-500 mt-2">
+                        COD unavailable for orders above ₹1000.
+                    </p>
+                    {% endif %}
+
+                    <!-- Razorpay -->
+                    <label class="flex items-center gap-3 border rounded-xl p-4 mt-3">
+
+                        <input type="radio"
+                               name="payment_method"
+                               value="RAZORPAY"
+                               {% if total > 1000 %}checked{% endif %}>
+
+                        <span class="font-medium">
+                            Online Payment (Razorpay)
+                        </span>
+
+                    </label>
+
+                    <!-- Wallet -->
+                    <label class="flex items-center gap-3 border rounded-xl p-4 mt-3
+                        {% if wallet and wallet.balance < total %}opacity-50{% endif %}">
+
+                        <input type="radio"
+                               name="payment_method"
+                               value="WALLET"
+                               {% if wallet and wallet.balance < total %}disabled{% endif %}>
+
+                        <span class="font-medium">
+                            Wallet Payment
+                        </span>
+
+                    </label>
+
+                    <p class="text-xs text-gray-500 mt-2">
+                        Balance:
+                        ₹{% if wallet %}{{ wallet.balance|floatformat:2 }}{% else %}0.00{% endif %}
+                    </p>
+
+                    {% if wallet and wallet.balance < total %}
+                    <p class="text-xs text-red-500 mt-1">
+                        Insufficient wallet balance.
+                    </p>
+                    {% endif %}
+
+                </div>
+
+                <!-- ITEMS -->
+                <div class="bg-white border rounded-2xl shadow-sm p-6">
+
+                    <h2 class="text-lg font-semibold text-gray-800 mb-5">
+                        Order Items
+                    </h2>
+
+                    <div class="space-y-4">
+
+                        {% for item in cart_items %}
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border rounded-xl p-4">
+
+                            <div class="flex gap-4">
+
+                                {% if item.product.thumbnail %}
+                                <img src="{{ item.product.thumbnail.image.url }}"
+                                     class="w-16 h-16 object-contain rounded-lg border bg-white p-1">
+
+                                {% elif item.product.images.first %}
+                                <img src="{{ item.product.images.first.image.url }}"
+                                     class="w-16 h-16 object-contain rounded-lg border bg-white p-1">
+                                {% endif %}
+
+                                <div class="text-sm">
+
+                                    <p class="font-semibold text-gray-800">
+                                        {{ item.product.name }}
+                                    </p>
+
+                                    <p class="text-gray-500 mt-1">
+                                        Color: {{ item.color_variant.color }}
+                                    </p>
+
+                                    <p class="text-gray-500">
+                                        Qty: {{ item.quantity }}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            <div class="text-right">
+
+                                <p class="font-semibold text-green-700">
+                                    ₹{{ item.product|best_price|floatformat:2 }}
+                                    <p class="text-sm text-gray-500"> each </p>
+                                </p>
+
+                            </div>
+
+                        </div>
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div>
+
+                <div class="bg-white border rounded-2xl shadow-sm p-6 sticky top-6">
+
+                    <h2 class="text-lg font-semibold text-gray-800 mb-5">
+                        Order Summary
+                    </h2>
+
+                    <div class="space-y-3 text-sm">
+
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>₹{{ subtotal|floatformat:2 }}</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span>Tax</span>
+                            <span>₹{{ tax|floatformat:2 }}</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span>Shipping</span>
+                            <span>
+                                {% if shipping > 0 %}
+                                    ₹{{ shipping|floatformat:2 }}
+                                {% else %}
+                                    Free
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Coupon -->
+                        <div class="border rounded-xl p-4 mt-4">
+
+                            <div class="flex gap-2">
+                                <input type="text"
+                                       id="coupon-code"
+                                       placeholder="Enter coupon code"
+                                       class="border rounded-lg px-3 py-2 w-full text-sm">
+
+                                <button type="button"
+                                        onclick="applyCoupon()"
+                                        class="bg-black text-white px-4 rounded-lg text-sm hover:bg-gray-800">
+                                    Apply
+                                </button>
+                            </div>
+
+                            <p id="coupon-msg" class="text-xs mt-2"></p>
+
+                            <button type="button"
+                                    id="remove-coupon-btn"
+                                    onclick="removeCoupon()"
+                                    class="text-red-600 text-xs mt-2 hidden hover:underline">
+                                Remove Coupon
+                            </button>
+
+                            <!-- Available Coupons -->
+                            <div class="mt-4">
+
+                                <p class="text-sm font-semibold mb-2">
+                                    Available Coupons
+                                </p>
+
+                                {% for coupon in valid_coupons %}
+                                <div class="border rounded-lg p-3 mb-2 flex justify-between gap-3">
+
+                                    <div>
+                                        <p class="font-medium text-sm">
+                                            {{ coupon.code }}
+                                        </p>
+
+                                        <p class="text-xs text-gray-500">
+                                            {{ coupon.discount_percent }}% OFF
+                                            (Min ₹{{ coupon.min_order_value }})
+                                        </p>
+                                    </div>
+
+                                    <button type="button"
+                                            onclick="applyCouponFromList('{{ coupon.code }}')"
+                                            class="text-blue-600 text-xs hover:underline">
+                                        Apply
+                                    </button>
+
+                                </div>
+                                {% empty %}
+                                <p class="text-xs text-gray-500">
+                                    No coupons available.
+                                </p>
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+                        <div class="flex justify-between text-green-700">
+                            <span>Discount</span>
+                            <span id="discount">₹0.00</span>
+                        </div>
+
+                        <hr>
+
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span id="grand-total">
+                                ₹{{ total|floatformat:2 }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                    {% if addresses %}
+                    <button type="button"
+                            onclick="handlePayment()"
+                            class="w-full mt-6 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium">
+                        Place Order
+                    </button>
+                    {% endif %}
+
+                    <p class="text-xs text-gray-500 text-center mt-3">
+                        Secure checkout powered by Razorpay.
+                    </p>
+
+                </div>
+
+            </div>
 
         </div>
 
-        {% if addresses %}
-        <button type="submit"
-                class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg
-                    hover:bg-green-700 transition font-semibold">
-        Place Order
-        </button>
-        {% endif %}
+    </form>
 
-      </div>
-    </div>
-
-  </div>
 </div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function handlePayment() {
+
+    const payment = document.querySelector('input[name="payment_method"]:checked');
+
+    if (!payment) {
+        alert("Please select a payment method.");
+        return;
+    }
+
+    const paymentMethod = payment.value;
+
+    if (paymentMethod === "COD" || paymentMethod === "WALLET") {
+        document.getElementById("checkoutForm").submit();
+        return;
+    }
+
+    fetch("/orders/create-razorpay-order/")
+    .then(res => res.json())
+    .then(data => {
+
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "SmashStrix",
+            description: "Order Payment",
+            order_id: data.razorpay_order_id,
+
+            handler: function(response) {
+
+                fetch("/orders/verify-payment/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        address_id: document.querySelector('input[name="address_id"]:checked').value
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert("Payment verification failed.");
+                    }
+                });
+            }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+
+    });
+}
+
+function applyCoupon() {
+
+    const code = document.getElementById("coupon-code").value;
+
+    fetch("/coupons/apply/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken(),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `code=${code}`
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        const msg = document.getElementById("coupon-msg");
+
+        if (data.error) {
+
+            msg.innerText = data.error;
+            msg.className = "text-red-600";
+
+        } else {
+
+            msg.innerText = "Coupon applied successfully.";
+            msg.className = "text-green-600";
+
+            document.getElementById("discount").innerText =
+                "-₹" + parseFloat(data.discount).toFixed(2);
+
+            document.getElementById("grand-total").innerText =
+                "₹" + parseFloat(data.final_total).toFixed(2);
+
+            document.getElementById("remove-coupon-btn")
+                .classList.remove("hidden");
+        }
+
+    });
+}
+
+function removeCoupon() {
+    fetch("/coupons/remove/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCSRFToken()
+        }
+    }).then(() => location.reload());
+}
+
+function applyCouponFromList(code) {
+    document.getElementById("coupon-code").value = code;
+    applyCoupon();
+}
+</script>
+
 {% endblock %}

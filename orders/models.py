@@ -8,6 +8,7 @@ import uuid
 class Order(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
+        ("processing", "Processing"),
         ("shipped", "Shipped"),
         ("out_for_delivery", "Out For Delivery"),
         ("delivered", "Delivered"),
@@ -16,6 +17,8 @@ class Order(models.Model):
 
     PAYMENT_CHOICES = [
         ("COD", "Cash on Delivery"),
+        ("RAZORPAY", "Online Payment"),
+        ("WALLET", "Wallet"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="orders")
@@ -24,6 +27,8 @@ class Order(models.Model):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     tax = models.DecimalField(max_digits=10, decimal_places=2)
     shipping = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    coupon = models.ForeignKey("coupons.Coupon", on_delete=models.SET_NULL, null=True, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20,choices=STATUS_CHOICES,default="pending")
     payment_method = models.CharField(max_length=20,choices=PAYMENT_CHOICES,default="COD")

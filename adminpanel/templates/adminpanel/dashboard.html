@@ -1,123 +1,225 @@
 {% extends 'adminpanel/base_admin.html' %}
-{% block title %}Dashboard | SmashStrix Admin{% endblock %}
+{% block title %}Dashboard | Executive Command{% endblock %}
 
 {% block content %}
+<div class="p-8 bg-gray-50 min-h-screen">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-10 gap-6">
+    <div>
+      <h1 class="text-3xl font-black text-gray-900 uppercase tracking-tighter">Admin Dashboard</h1>
+    </div>
 
-<h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
-
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
-
-  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Users</h2>
-        <p class="text-3xl font-bold text-blue-700">{{ total_users }}</p>
-      </div>
-      <i class="ri-user-3-line text-4xl text-blue-600"></i>
+    <div class="bg-white shadow-xl rounded-2xl p-1.5 border border-gray-100">
+      <form method="GET" class="flex items-center gap-2">
+        <div class="px-4 py-2 border-r border-gray-100">
+          <select name="filter" class="bg-transparent text-sm font-bold text-gray-700 focus:ring-0 outline-none cursor-pointer">
+            <option value="daily" {% if filter_type == "daily" %}selected{% endif %}>Daily Overview</option>
+            <option value="monthly" {% if filter_type == "monthly" %}selected{% endif %}>Monthly Overview</option>
+          </select>
+        </div>
+        <button type="submit" class="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase transition-all shadow-lg">
+          Update Report
+        </button>
+      </form>
     </div>
   </div>
 
-  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Products</h2>
-        <p class="text-3xl font-bold text-green-700">{{ total_products }}</p>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div class="bg-white p-6 rounded-[1.5rem] shadow-xl border border-gray-100 group hover:scale-[1.02] transition-transform">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Total Users</p>
+          <h3 class="text-3xl font-black text-gray-800">{{ total_users }}</h3>
+        </div>
+        <div class="h-14 w-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+          <i class="ri-user-3-line text-2xl"></i>
+        </div>
       </div>
-      <i class="ri-shopping-bag-3-line text-4xl text-green-600"></i>
+    </div>
+
+    <div class="bg-white p-6 rounded-[1.5rem] shadow-xl border border-gray-100 group hover:scale-[1.02] transition-transform">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-green-500 uppercase tracking-widest mb-1">Products</p>
+          <h3 class="text-3xl font-black text-gray-800">{{ total_products }}</h3>
+        </div>
+        <div class="h-14 w-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center shadow-inner">
+          <i class="ri-shopping-bag-3-line text-2xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-[1.5rem] shadow-xl border border-gray-100 group hover:scale-[1.02] transition-transform">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1">Categories</p>
+          <h3 class="text-3xl font-black text-gray-800">{{ total_categories }}</h3>
+        </div>
+        <div class="h-14 w-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-inner">
+          <i class="ri-price-tag-3-line text-2xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-[1.5rem] shadow-xl border border-gray-100 group hover:scale-[1.02] transition-transform">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Brands</p>
+          <h3 class="text-3xl font-black text-gray-800">{{ total_brands }}</h3>
+        </div>
+        <div class="h-14 w-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner">
+          <i class="ri-store-2-line text-2xl"></i>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-    <div class="flex items-center justify-between">
+  <div class="bg-white p-8 rounded-[2rem] shadow-2xl mb-12 border border-gray-50">
+    <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Categories</h2>
-        <p class="text-3xl font-bold text-purple-700">{{ total_categories }}</p>
+        <h2 class="text-xl font-black text-gray-800">Revenue Stream</h2>
+        <p class="text-xs font-bold text-gray-400 uppercase">Gross income analytics</p>
       </div>
-      <i class="ri-price-tag-3-line text-4xl text-purple-600"></i>
+      <span class="text-[10px] font-black text-green-600 bg-green-50 px-4 py-1.5 rounded-full uppercase tracking-widest animate-pulse">Live Feed</span>
+    </div>
+    <div class="h-[400px]">
+      <canvas id="salesChart"></canvas>
     </div>
   </div>
 
-  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Brands</h2>
-        <p class="text-3xl font-bold text-orange-700">{{ total_brands }}</p>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+    <div class="bg-white shadow-xl rounded-[1.5rem] border border-gray-100 flex flex-col">
+      <div class="p-6 bg-gray-50 border-b flex items-center gap-3">
+        <div class="h-8 w-8 bg-black text-white rounded-lg flex items-center justify-center text-xs">
+          <i class="ri-trophy-line"></i>
+        </div>
+        <h2 class="text-sm font-black text-gray-800 uppercase">Top Products</h2>
       </div>
-      <i class="ri-store-2-line text-4xl text-orange-600"></i>
-    </div>
-  </div>
-
-  <!-- <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition opacity-60 cursor-not-allowed">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Orders</h2>
-        <p class="text-3xl font-bold text-gray-500">Soon</p>
-      </div>
-      <i class="ri-file-list-3-line text-4xl text-gray-400"></i>
-    </div>
-  </div>
-
-  <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition opacity-60 cursor-not-allowed">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-700">Total Sales</h2>
-        <p class="text-3xl font-bold text-gray-500">Soon</p>
-      </div>
-      <i class="ri-bar-chart-box-line text-4xl text-gray-400"></i>
-    </div>
-  </div> -->
-
-</div>
-
-
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-  <div class="bg-white p-6 rounded-lg shadow">
-    <h2 class="text-xl font-bold mb-4">Recent Users</h2>
-
-    <table class="w-full">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="p-3 text-left">Email</th>
-          <th class="p-3 text-left">Joined</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for u in recent_users %}
-        {% if not u.is_superuser %}
-          <tr class="border-b">
-            <td class="p-3">{{ u.email }}</td>
-            <td class="p-3">{{ u.date_joined|date:"d M Y" }}</td>
-          </tr>
-        {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="bg-white p-6 rounded-lg shadow">
-    <h2 class="text-xl font-bold mb-4">Recent Products</h2>
-
-    <table class="w-full">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="p-3 text-left">Product</th>
-          <th class="p-3 text-left">Brand</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in recent_products %}
-          <tr class="border-b">
-            <td class="p-3">{{ p.name }}</td>
-            <td class="p-3">{{ p.brand.name }}</td>
-          </tr>
+      <div class="p-2 flex-grow">
+        {% for item in top_products %}
+        <div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+          <span class="text-sm font-bold text-gray-700">{{ item.product__name }}</span>
+          <span class="text-xs font-black bg-gray-100 text-gray-800 px-3 py-1 rounded-full">{{ item.total_sold }} Sold</span>
+        </div>
         {% empty %}
-          <tr><td class="p-4 text-gray-500" colspan="2">No products found.</td></tr>
+        <div class="p-10 text-center text-gray-400 italic text-xs">No product data</div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-[1.5rem] border border-gray-100 flex flex-col">
+      <div class="p-6 bg-gray-50 border-b flex items-center gap-3">
+        <div class="h-8 w-8 bg-black text-white rounded-lg flex items-center justify-center text-xs">
+          <i class="ri-pie-chart-line"></i>
+        </div>
+        <h2 class="text-sm font-black text-gray-800 uppercase">Top Categories</h2>
+      </div>
+      <div class="p-2 flex-grow">
+        {% for item in top_categories %}
+        <div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+          <span class="text-sm font-bold text-gray-700">{{ item.product__category__name }}</span>
+          <span class="text-xs font-black bg-gray-100 text-gray-800 px-3 py-1 rounded-full">{{ item.total_sold }} Sold</span>
+        </div>
+        {% empty %}
+        <div class="p-10 text-center text-gray-400 italic text-xs">No category data</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-[1.5rem] border border-gray-100 flex flex-col">
+      <div class="p-6 bg-gray-50 border-b flex items-center gap-3">
+        <div class="h-8 w-8 bg-black text-white rounded-lg flex items-center justify-center text-xs">
+          <i class="ri-medal-line"></i>
+        </div>
+        <h2 class="text-sm font-black text-gray-800 uppercase">Top Brands</h2>
+      </div>
+      <div class="p-2 flex-grow">
+        {% for item in top_brands %}
+        <div class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors">
+          <span class="text-sm font-bold text-gray-700">{{ item.product__brand__name }}</span>
+          <span class="text-xs font-black bg-gray-100 text-gray-800 px-3 py-1 rounded-full">{{ item.total_sold }} Sold</span>
+        </div>
+        {% empty %}
+        <div class="p-10 text-center text-gray-400 italic text-xs">No brand data</div>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white shadow-xl rounded-[1.5rem] overflow-hidden border border-gray-100">
+      <div class="p-6 bg-gray-900 flex justify-between items-center">
+        <h2 class="text-sm font-black text-white uppercase tracking-wider">New Members</h2>
+        <a href="{% url 'admin_users' %}" class="text-[10px] font-black text-gray-400 hover:text-white transition-colors uppercase">View All</a>
+      </div>
+      <table class="w-full text-left">
+        <tbody class="divide-y divide-gray-100">
+          {% for u in recent_users %}
+          {% if not u.is_superuser %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 text-sm font-bold text-gray-700">{{ u.email }}</td>
+            <td class="px-6 py-4 text-xs text-gray-400 text-right uppercase font-bold">{{ u.date_joined|date:"d M Y" }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-[1.5rem] overflow-hidden border border-gray-100">
+      <div class="p-6 bg-gray-900 flex justify-between items-center">
+        <h2 class="text-sm font-black text-white uppercase tracking-wider">Recently Added</h2>
+        <a href="{% url 'admin_products' %}" class="text-[10px] font-black text-gray-400 hover:text-white transition-colors uppercase">Catalog</a>
+      </div>
+      <table class="w-full text-left">
+        <tbody class="divide-y divide-gray-100">
+          {% for p in recent_products %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-4 text-sm font-bold text-gray-700">{{ p.name }}</td>
+            <td class="px-6 py-4 text-right">
+               <span class="px-3 py-1 bg-black text-white rounded-full text-[9px] font-black uppercase tracking-tighter">{{ p.brand.name }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('salesChart');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+            label: 'Revenue (₹)',
+            data: {{ values|safe }},
+            borderColor: '#000',
+            backgroundColor: 'rgba(0, 0, 0, 0.05)',
+            fill: true,
+            borderWidth: 4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { 
+                grid: { color: 'rgba(0,0,0,0.05)' }, 
+                ticks: { font: { weight: 'bold' } } 
+            },
+            x: { 
+                grid: { display: false }, 
+                ticks: { font: { weight: 'bold' } } 
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

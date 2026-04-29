@@ -2,69 +2,132 @@
 {% block title %}Brands | SmashStrix{% endblock %}
 
 {% block content %}
-<div class="flex justify-between mb-6">
-  <h2 class="text-2xl font-bold">Brands</h2>
-  <a href="{% url 'admin_brand_add' %}" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
-    Add Brand
-  </a>
+<div class="p-8">
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 uppercase tracking-tight">Brands</h2>
+
+        <a href="{% url 'admin_brand_add' %}"
+           class="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-md flex items-center">
+            <span class="mr-2">+</span> Add Brand
+        </a>
+    </div>
+
+    <div class="bg-white shadow-lg rounded-xl p-5 mb-6 border border-gray-100">
+        <form method="GET" class="flex flex-wrap gap-3 items-center">
+            <div class="flex-1 min-w-[250px]">
+                <input type="text"
+                       name="search"
+                       value="{{ search }}"
+                       placeholder="Search Brands..."
+                       class="w-full border border-gray-200 px-4 py-2 rounded-lg focus:ring-2 focus:ring-black outline-none transition-all">
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit"
+                        class="bg-black hover:bg-gray-800 text-white px-8 py-2 rounded-lg font-bold transition-all shadow-md">
+                    Search
+                </button>
+                <a href="{% url 'admin_brands' %}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold transition-all border border-gray-200">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
+        <table class="w-full text-left table-auto">
+            <thead class="bg-gray-50 border-b">
+                <tr class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <th class="p-5">Logo</th>
+                    <th class="p-5">Brand Name</th>
+                    <th class="p-5 text-center">Status</th>
+                    <th class="p-5 text-right">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-100">
+                {% for brand in brands %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-5">
+                        {% if brand.logo and brand.logo.url %}
+                            <img src="{{ brand.logo.url }}" class="h-12 w-auto object-contain rounded border shadow-sm p-1">
+                        {% else %}
+                            <span class="text-gray-400 text-xs italic">— No Logo —</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="p-5 font-bold text-gray-800">{{ brand.name }}</td>
+
+                    <td class="p-5 text-center">
+                        {% if brand.active %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-green-100 text-green-700">Active</span>
+                        {% else %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-rose-100 text-rose-700">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="p-5 text-right">
+                        <div class="inline-flex space-x-2">
+                            <a href="{% url 'admin_brand_edit' brand.id %}" 
+                               class="px-4 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-md text-xs font-bold transition-all border border-indigo-200 uppercase">
+                                Edit
+                            </a>
+                            <button onclick="confirmDelete('{% url 'admin_brand_delete' brand.id %}')"
+                                    class="px-4 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-md text-xs font-bold transition-all border border-rose-200 uppercase">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-12 text-center text-gray-400 italic">
+                        No brands found matching your search.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="p-6 bg-gray-50 border-t flex justify-center items-center gap-3">
+            {% if brands.has_previous %}
+                <a href="?page={{ brands.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold shadow-md">
+                Page {{ brands.number }} of {{ brands.paginator.num_pages }}
+            </span>
+
+            {% if brands.has_next %}
+                <a href="?page={{ brands.next_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-shadow shadow-sm">
+                    Next
+                </a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-<form method="GET" class="mb-4 flex gap-2">
-    <input type="text" name="search" value="{{ search }}" placeholder="Search Brands..."
-           class="border p-2 rounded w-64">
-    <button class="bg-blue-700 text-white px-3 py-2 rounded">Search</button>
-    <a href="{% url 'admin_brands' %}" class="bg-gray-500 text-white px-3 py-2 rounded">Clear</a>
-</form>
-
-<table class="w-full bg-white shadow-md rounded mt-4">
-  <thead class="bg-gray-100">
-    <tr>
-      <th class="p-3 text-left">Logo</th>
-      <th class="p-3 text-left">Brand Name</th>
-      <th class="p-3">Status</th>
-      <th class="p-3">Actions</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for brand in brands %}
-    <tr class="border-b">
-      <td class="p-3">
-        {% if brand.logo and brand.logo.url %}
-          <img src="{{ brand.logo.url }}" class="h-10">
-        {% else %}
-          —
-        {% endif %}
-      </td>
-      <td class="p-3">{{ brand.name }}</td>
-
-      <td class="p-3">
-        {% if brand.active %}
-          <span class="text-green-600 font-semibold">Active</span>
-        {% else %}
-          <span class="text-red-600 font-semibold">Inactive</span>
-        {% endif %}
-      </td>
-
-      <td class="p-3 flex gap-3">
-        <a href="{% url 'admin_brand_edit' brand.id %}" class="text-blue-600 hover:underline">Edit</a>
-        <a href="#" class="text-red-600 hover:underline"onclick="confirmDelete('{% url 'admin_brand_delete' brand.id %}')">Delete</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<div class="mt-4">
-  {% if brands.has_previous %}
-    <a href="?page={{ brands.previous_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Previous</a>
-  {% endif %}
-
-  <span class="mx-2">Page {{ brands.number }} of {{ brands.paginator.num_pages }}</span>
-
-  {% if brands.has_next %}
-    <a href="?page={{ brands.next_page_number }}" class="px-3 py-1 bg-gray-300 rounded">Next</a>
-  {% endif %}
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmDelete(url) {
+    Swal.fire({
+        title: "Delete Brand?",
+        text: "This action will remove the brand and potentially affect associated products.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Delete It"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
+</script>
 {% endblock %}

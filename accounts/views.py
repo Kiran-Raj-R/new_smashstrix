@@ -5,10 +5,16 @@ from django.utils import timezone
 from . models import User
 from . utils import send_otp, send_reset_password_otp
 from . forms import UserSignupForm, UserloginForm
+from wallet.models import Wallet, WalletTransaction
+from decimal import Decimal
 
 User = get_user_model()
 
 def user_signup(request):
+    ref_code = request.GET.get("ref")
+    if ref_code:
+        request.session["referral_code"] = ref_code
+
     if request.user.is_authenticated:
         return redirect('home')
     form = UserSignupForm(request.POST or None)
@@ -40,6 +46,29 @@ def verify_otp(request):
             user.otp_verified = True
             user.otp = None
             user.save()
+            ref_code = request.session.get("referral_code")
+            if ref_code:
+                try:
+                    referrer = User.objects.get(referral_code=ref_code)
+                    if referrer != user:
+                        user.referred_by = referrer
+                        user.save(update_fields=["referred_by"])
+                        wallet, _ = Wallet.objects.get_or_create(user=referrer)
+                        reward = Decimal("100.00")
+                        wallet.balance += reward
+                        wallet.save()
+                        WalletTransaction.objects.create(user=referrer,amount=reward,transaction_type="credit",
+                                                         description=f"Referral reward for inviting {user.email}")
+                        new_wallet, _ = Wallet.objects.get_or_create(user=user)
+                        bonus = Decimal("50.00")
+                        new_wallet.balance += bonus
+                        new_wallet.save()
+                        WalletTransaction.objects.create(user=user,amount=bonus,
+                            transaction_type="credit",description="Welcome bonus for referral signup")
+
+                except User.DoesNotExist:
+                    pass
+            request.session.pop("referral_code", None)
             del request.session['pending_user']
             messages.success(request,"Account verified Successfully. You can now login to Smashstrix.")
             return redirect('login')

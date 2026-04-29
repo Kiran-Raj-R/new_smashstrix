@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from products.models import Product, ColorVariant
+from products.utils import get_best_price, get_best_offer
 from .models import CartItem, Cart
 from .utils import get_or_create_cart
 from decimal import Decimal
@@ -13,7 +14,6 @@ MAX_CART_QTY = 5
 def add_to_cart(request):
     if request.method != "POST":
         return redirect("shop")
-
     product_id = request.POST.get("product_id")
     variant_id = request.POST.get("variant_id")
     try:
@@ -47,45 +47,70 @@ def add_to_cart(request):
     messages.success(request, "Product added to cart successfully.")
     return redirect("cart_detail")
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@require_POST
 @login_required(login_url="login")
-def increment_cart_item(request, item_id):
+def update_cart_item(request):
+    item_id = request.POST.get("item_id")
+    action = request.POST.get("action")
     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
 
     if not cart_item.product.active or \
        not cart_item.product.brand.active or \
        not cart_item.product.category.active:
-        messages.error(request, "This product is no longer available.")
-        cart_item.delete()
-        return redirect("cart_detail")
+        return JsonResponse({"error": "Product not available"}, status=400)
 
-    if cart_item.color_variant:
-        if cart_item.quantity + 1 > cart_item.color_variant.stock:
-            messages.error(request, "No more stock available.")
-            return redirect("cart_detail")
+    if action == "increase":
+        if cart_item.quantity >= MAX_CART_QTY:
+            return JsonResponse({"error": f"Maximum {MAX_CART_QTY} items allowed"})
+        if cart_item.color_variant and cart_item.quantity >= cart_item.color_variant.stock:
+            return JsonResponse({"error": "No more stock available"})
+        cart_item.quantity += 1
 
-    if cart_item.quantity + 1 > MAX_CART_QTY:
-        messages.error(request, "Maximum quantity reached.")
-        return redirect("cart_detail")
-    cart_item.quantity += 1
-    cart_item.save()
-    return redirect("cart_detail")
-
-@login_required(login_url="login")
-def decrement_cart_item(request, item_id):
-    cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
-    if cart_item.quantity <= 1:
-        cart_item.delete()
-    else:
+    elif action == "decrease":
+        if cart_item.quantity <= 1:
+            return JsonResponse({"error": "Minimum quantity is 1"})
         cart_item.quantity -= 1
-        cart_item.save()
-    return redirect("cart_detail")
+    cart_item.save()
+    price = get_best_price(cart_item.product)
+    item_total = price * cart_item.quantity
+    cart = cart_item.cart
+    cart_total = sum((get_best_price(item.product)) * item.quantity for item in cart.items.all())
+    tax = cart_total * Decimal("0.05")
+    shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
+    grand_total = cart_total + tax + shipping
+    return JsonResponse({
+        "quantity": cart_item.quantity,
+        "item_total": float(item_total),
+        "cart_total": float(cart_total),
+        "tax": float(tax),
+        "shipping": float(shipping),
+        "grand_total": float(grand_total),
+    })
 
+@require_POST
 @login_required(login_url="login")
-def remove_from_cart(request, item_id):
+def remove_cart_item(request):
+    item_id = request.POST.get("item_id")
     cart_item = get_object_or_404(CartItem,id=item_id,cart__user=request.user)
+    cart = cart_item.cart
     cart_item.delete()
-    messages.success(request, "Item removed from cart.")
-    return redirect("cart_detail")
+    remaining_items = cart.items.count()
+    cart_total = sum((get_best_price(item.product)) * item.quantity for item in cart.items.all())
+    tax = cart_total * Decimal("0.05")
+    shipping = Decimal("0") if cart_total > 5000 else Decimal("50")
+    grand_total = cart_total + tax + shipping
+
+    return JsonResponse({
+        "cart_total": float(cart_total),
+        "tax": float(tax),
+        "shipping": float(shipping),
+        "grand_total": float(grand_total),
+        "empty": remaining_items == 0,
+        "message": "Item removed from cart"
+    })
 
 @login_required(login_url="login")
 def cart_detail(request):
@@ -102,13 +127,10 @@ def cart_detail(request):
     cart_items = (cart.items.select_related("product", "color_variant").prefetch_related("product__images").all())
     subtotal = 0
     for item in cart_items:
-        price = (
-            item.product.discount_price
-            if item.product.discount_price
-            else item.product.price
-        )
+        price = get_best_price(item.product)
         item.unit_price = price
         item.total_price = price * item.quantity
+        item.best_offer = get_best_offer(item.product)
         subtotal += item.total_price
     tax = subtotal * Decimal("0.05")
     shipping = 0 if subtotal > 5000 else 50

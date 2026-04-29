@@ -1,219 +1,146 @@
 {% extends "adminpanel/base_admin.html" %}
 {% block content %}
 
-<div class="p-6">
-
-    <h2 class="text-2xl font-bold mb-6">
+<div class="p-4 md:p-8">
+    <h2 class="text-3xl font-bold mb-6 text-gray-800 uppercase tracking-tight">
         Return Management
     </h2>
 
-    <!-- Search & Filter -->
-    <div class="bg-white shadow rounded-lg p-4 mb-6">
-        <form method="GET" class="flex flex-wrap gap-4 items-center">
-
-            <input type="text"
-                   name="search"
-                   value="{{ search }}"
-                   placeholder="Search Order ID or Product"
-                   class="border px-3 py-2 rounded w-64">
+    <div class="bg-white shadow-lg rounded-xl p-5 mb-6 border border-gray-100">
+        <form method="GET" class="flex flex-wrap gap-3 items-center">
+            <div class="flex-1 min-w-[250px]">
+                <input type="text"
+                       name="search"
+                       value="{{ search }}"
+                       placeholder="Search Order ID or Product"
+                       class="w-full border border-gray-200 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none transition-all">
+            </div>
 
             <select name="status"
-                    class="border px-3 py-2 rounded">
-
-                <option value="Requested"
-                    {% if status_filter == "Requested" %}selected{% endif %}>
-                    Requested
-                </option>
-
-                <option value="Approved"
-                    {% if status_filter == "Approved" %}selected{% endif %}>
-                    Approved
-                </option>
-
-                <option value="Rejected"
-                    {% if status_filter == "Rejected" %}selected{% endif %}>
-                    Rejected
-                </option>
-
-                <option value="all"
-                    {% if status_filter == "all" %}selected{% endif %}>
-                    All
-                </option>
-
+                    class="border border-gray-200 px-3 py-2 rounded-lg bg-white text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-black">
+                <option value="Requested" {% if status_filter == "Requested" or not status_filter %}selected{% endif %}>Requested</option>
+                <option value="Approved" {% if status_filter == "Approved" %}selected{% endif %}>Approved</option>
+                <option value="Rejected" {% if status_filter == "Rejected" %}selected{% endif %}>Rejected</option>
+                <option value="all" {% if status_filter == "all" %}selected{% endif %}>All</option>
             </select>
 
-            <button type="submit"
-                    class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700">
-                Apply
-            </button>
-
-            <a href="{% url 'admin_return_list' %}"
-               class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">
-                Clear
-            </a>
-
+            <div class="flex gap-2">
+                <button type="submit"
+                        class="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-md">
+                    Apply
+                </button>
+                <a href="{% url 'admin_return_list' %}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition-all border border-gray-200">
+                    Clear
+                </a>
+            </div>
         </form>
     </div>
 
-    <!-- Table -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-
-        <table class="w-full text-sm">
-
-            <thead class="bg-gray-100 text-left">
-                <tr>
+    <div class="bg-white shadow-xl rounded-xl overflow-x-auto border border-gray-100">
+        <table class="w-full text-left table-auto">
+            <thead class="bg-gray-50 border-b">
+                <tr class="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     <th class="p-4">Order ID</th>
                     <th class="p-4">Customer</th>
                     <th class="p-4">Product</th>
                     <th class="p-4">Variant</th>
-                    <th class="p-4">Qty</th>
+                    <th class="p-4 text-center">Qty</th>
                     <th class="p-4">Reason</th>
-                    <th class="p-4">Status</th>
-                    <th class="p-4">Requested On</th>
+                    <th class="p-4 text-center">Status</th>
+                    <th class="p-4 text-center">Requested On</th>
                     <th class="p-4 text-center">Action</th>
                 </tr>
             </thead>
 
-            <tbody>
-
+            <tbody class="divide-y divide-gray-100 text-xs">
                 {% for item in return_items %}
-                <tr class="border-t hover:bg-gray-50">
-
-                    <td class="p-4 font-medium">
-                        {{ item.order.order_id }}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-bold text-gray-800 whitespace-nowrap">#{{ item.order.order_id }}</td>
+                    <td class="p-4 text-gray-700">{{ item.order.user.email }}</td>
+                    <td class="p-4 text-gray-700 font-medium">{{ item.product.name }}</td>
+                    <td class="p-4 text-gray-600 whitespace-nowrap">
+                        {% if item.color_variant %}{{ item.color_variant.color }}{% else %}-{% endif %}
                     </td>
-
+                    <td class="p-4 text-center font-semibold text-gray-700">{{ item.quantity }}</td>
                     <td class="p-4">
-                        {{ item.order.user.email }}
+                        <p class="text-gray-500 italic leading-tight max-w-[150px] truncate" title="{{ item.return_reason }}">
+                            {{ item.return_reason }}
+                        </p>
                     </td>
-
-                    <td class="p-4">
-                        {{ item.product.name }}
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                            {% if item.return_status == 'Requested' %}bg-amber-100 text-amber-700
+                            {% elif item.return_status == 'Approved' %}bg-green-100 text-green-700
+                            {% else %}bg-rose-100 text-rose-700{% endif %}">
+                            {{ item.return_status }}
+                        </span>
                     </td>
-
-                    <td class="p-4">
-                        {% if item.color_variant %}
-                            {{ item.color_variant.color }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-
-                    <td class="p-4">
-                        {{ item.quantity }}
-                    </td>
-
-                    <td class="p-4 text-gray-600">
-                        {{ item.return_reason }}
-                    </td>
-
-                    <td class="p-4">
-                        {% if item.return_status == "Requested" %}
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">
-                                Requested
-                            </span>
-                        {% elif item.return_status == "Approved" %}
-                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                                Approved
-                            </span>
-                        {% elif item.return_status == "Rejected" %}
-                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">
-                                Rejected
-                            </span>
-                        {% endif %}
-                    </td>
-
-                    <td class="p-4">
+                    <td class="p-4 text-center text-gray-500 whitespace-nowrap">
                         {{ item.return_requested_at|date:"d M Y" }}
                     </td>
 
-                    <!-- Action Column -->
-                    <td class="p-4 text-center">
-
-                        {% if item.return_status == "Requested" %}
-
-                        <div class="flex flex-col gap-2 items-center">
-
-                            <form method="POST"
-                                  action="{% url 'admin_handle_return' item.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="approve">
-                                <button type="button"
-                                        class="approve-btn bg-green-600 text-white px-3 py-1 rounded text-xs w-20 hover:bg-green-700">
-                                    Approve
-                                </button>
-                            </form>
-
-                            <form method="POST"
-                                  action="{% url 'admin_handle_return' item.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="reject">
-                                <button type="button"
-                                        class="reject-btn bg-red-600 text-white px-3 py-1 rounded text-xs w-20 hover:bg-red-700">
-                                    Reject
-                                </button>
-                            </form>
-
+                    <td class="p-4">
+                        <div class="flex flex-col gap-1 items-center">
+                            {% if item.return_status == "Requested" %}
+                                <form method="POST" action="{% url 'admin_handle_return' item.id %}" class="w-full">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="button" class="approve-btn w-full bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-green-700 transition-colors shadow-sm">
+                                        Approve
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'admin_handle_return' item.id %}" class="w-full">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="button" class="reject-btn w-full bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-red-700 transition-colors shadow-sm">
+                                        Reject
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-gray-400 font-medium italic">Processed</span>
+                            {% endif %}
                         </div>
-
-                        {% else %}
-                            <span class="text-gray-400 text-xs">Processed</span>
-                        {% endif %}
-
                     </td>
-
                 </tr>
-
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="p-6 text-center text-gray-500">
+                    <td colspan="9" class="p-10 text-center text-gray-400 italic text-sm">
                         No return records found.
                     </td>
                 </tr>
                 {% endfor %}
-
             </tbody>
         </table>
 
-    </div>
-
-    <!-- Pagination -->
-    <div class="mt-6 flex justify-center">
-        <div class="flex gap-2">
-
+        <div class="p-4 bg-gray-50 border-t flex justify-center items-center gap-2">
             {% if return_items.has_previous %}
-                <a href="?page={{ return_items.previous_page_number }}&status={{ status_filter }}&search={{ search }}"
-                   class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
-                    Previous
+                <a href="?page={{ return_items.previous_page_number }}&status={{ status_filter }}&search={{ search }}" 
+                   class="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 transition-shadow shadow-sm">
+                    Prev
                 </a>
             {% endif %}
 
-            <span class="px-3 py-1 bg-gray-800 text-white rounded">
-                Page {{ return_items.number }} of {{ return_items.paginator.num_pages }}
+            <span class="px-3 py-1.5 bg-black text-white rounded text-xs font-bold shadow-md">
+                {{ return_items.number }} / {{ return_items.paginator.num_pages }}
             </span>
 
             {% if return_items.has_next %}
-                <a href="?page={{ return_items.next_page_number }}&status={{ status_filter }}&search={{ search }}"
-                   class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+                <a href="?page={{ return_items.next_page_number }}&status={{ status_filter }}&search={{ search }}" 
+                   class="px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 transition-shadow shadow-sm">
                     Next
                 </a>
             {% endif %}
-
         </div>
     </div>
-
 </div>
 
-<!-- SweetAlert -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
     document.querySelectorAll(".approve-btn").forEach(btn => {
         btn.addEventListener("click", function () {
             const form = this.closest("form");
-
             Swal.fire({
                 title: "Approve Return?",
                 text: "Stock will be restored to inventory.",
@@ -222,18 +149,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 confirmButtonColor: "#16a34a",
                 cancelButtonColor: "#6b7280",
                 confirmButtonText: "Yes, approve it"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
+            }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
     });
 
     document.querySelectorAll(".reject-btn").forEach(btn => {
         btn.addEventListener("click", function () {
             const form = this.closest("form");
-
             Swal.fire({
                 title: "Reject Return?",
                 text: "This action cannot be undone.",
@@ -242,15 +164,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 confirmButtonColor: "#dc2626",
                 cancelButtonColor: "#6b7280",
                 confirmButtonText: "Yes, reject it"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    form.submit();
-                }
-            });
+            }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
     });
-
 });
 </script>
-
 {% endblock %}

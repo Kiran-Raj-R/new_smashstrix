@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect, get_object_or_404
 from django.core.paginator import Paginator
-from products.models import Product, Brand, Category, ColorVariant
+from products.models import Product, Brand, Category, ColorVariant, ProductReview
 from .color_map import COLOR_MAP
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -9,13 +9,18 @@ from .forms import AddressForm, EditProfileForm, ChangePasswordForm
 from django.contrib import messages
 from accounts.utils import send_email_change_otp
 from django.utils import timezone
+from products.utils import get_best_price, get_best_offer
+from wishlist.models import WishlistItem
+from django.db.models import Avg, Count
+from orders.models import OrderItem
 
 
 def home(request):
-    return render(request, "user/home.html")
+    brands = Brand.objects.filter(active=True)[:4]
+    return render(request, "user/home.html",{'brands':brands})
 
 def shop(request):
-    products = Product.objects.filter(active=True)
+    products = Product.objects.filter(active=True).annotate(avg_rating=Avg("reviews__rating"),review_count=Count("reviews"))
     q = request.GET.get("q")
     if q:
         products = products.filter(name__icontains=q)
@@ -56,10 +61,20 @@ def shop(request):
     page = request.GET.get("page")
     products = paginator.get_page(page)
 
+    for product in products:
+            product.final_price = get_best_price(product)
+            product.best_offer = get_best_offer(product)
+
     query_params = request.GET.copy()
     if "page" in query_params:
         del query_params["page"]
     querystring = query_params.urlencode()
+
+    wishlist_product_ids = []
+    if request.user.is_authenticated:
+        wishlist_product_ids = list(WishlistItem.objects.filter(wishlist__user=request.user)
+                                    .values_list("product_id", flat=True))
+    
     context = {
         "products": products,
         "querystring": querystring,
@@ -72,6 +87,7 @@ def shop(request):
         "selected_colors": selected_colors,
         "min_price": min_price,
         "max_price": max_price,
+        "wishlist_product_ids": wishlist_product_ids,
         "request": request,
     }
     return render(request, "user/shop.html", context)
@@ -80,7 +96,53 @@ def shop(request):
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id, active=True)
     related_products = Product.objects.filter(category=product.category, active=True).exclude(id=product.id)[:4]
-    return render(request,"user/product_detail.html",{"product": product,"related_products": related_products,},)
+    final_price = get_best_price(product)
+    best_offer = get_best_offer(product)
+    for rp in related_products:
+        rp.final_price = get_best_price(rp)
+        rp.best_offer = get_best_offer(rp)
+
+    reviews = product.reviews.select_related("user")
+    review_stats = reviews.aggregate(avg_rating=Avg("rating"),total_reviews=Count("id"))
+    avg_rating = review_stats["avg_rating"] or 0
+    total_reviews = review_stats["total_reviews"] or 0
+    can_review = False
+    user_review = None
+
+    if request.user.is_authenticated:
+        can_review = OrderItem.objects.filter(order__user=request.user,order__status="delivered",product=product).exists()
+        user_review = ProductReview.objects.filter(product=product,user=request.user).first()
+
+    context = {
+        "product": product,
+        "related_products": related_products,
+        "final_price": final_price,
+        "best_offer": best_offer,
+        "reviews": reviews,
+        "avg_rating": avg_rating,
+        "total_reviews": total_reviews,
+        "can_review": can_review,
+        "user_review": user_review,
+    }
+    return render(request,"user/product_detail.html", context)
+
+@login_required(login_url="login")
+def submit_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    purchased = OrderItem.objects.filter(order__user=request.user,order__status="delivered",product=product).exists()
+
+    if not purchased:
+        messages.error(request, "Only verified buyers can review.")
+        return redirect("product_detail", product_id=product.id)
+
+    if request.method == "POST":
+        rating = int(request.POST.get("rating"))
+        comment = request.POST.get("comment", "").strip()
+        ProductReview.objects.update_or_create(product=product,user=request.user,
+            defaults={"rating": rating,"comment": comment})
+        messages.success(request, "Review submitted successfully.")
+
+    return redirect("product_detail", product_id=product.id)
 
 @login_required(login_url="login")
 def user_profile(request):
@@ -94,6 +156,7 @@ def address_list(request):
 
 @login_required(login_url="login")
 def address_add(request):
+    next_url = request.GET.get("next") or request.POST.get("next")
     initial_data = {"full_name":f"{request.user.first_name} {request.user.last_name}", "phone": request.user.mobile}
     form = AddressForm(request.POST or None, initial=initial_data)
     if request.method == 'POST' and form.is_valid():
@@ -105,8 +168,10 @@ def address_add(request):
             Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
         address.save()
         messages.success(request,"Address added successfully.")
+        if next_url and next_url!= None:
+            return redirect(next_url)
         return redirect("address_list")
-    return render(request,"user/profile/address_form.html",{'form':form, 'mode':'add'})
+    return render(request,"user/profile/address_form.html",{'form':form, 'mode':'add', 'next':next_url})
 
 @login_required(login_url="login")
 def address_edit(request,pk):

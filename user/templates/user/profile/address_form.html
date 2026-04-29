@@ -121,7 +121,7 @@
 
     <form method="POST" novalidate>
       {% csrf_token %}
-
+      <input type="hidden" name="next" value="{{ next|default:'' }}">
       {% if form.non_field_errors %}
         <div class="errorlist">
           {% for error in form.non_field_errors %}
@@ -150,7 +150,7 @@
       </button>
     </form>
 
-    <a href="{% url 'address_list' %}" class="cancel-link">
+    <a href="{{ next|default:request.META.HTTP_REFERER|default:'#' }}" class="cancel-link">
       Cancel
     </a>
 

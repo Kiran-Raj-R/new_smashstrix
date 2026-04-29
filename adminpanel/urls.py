@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('products/', views.product_list, name='admin_products'),
     path('products/new/',views.product_add,name='admin_product_add'),
+    path("products/image/<int:img_id>/primary/",views.set_primary_image,name="admin_set_primary_image"),
     path("products/change/<int:product_id>/", views.product_edit, name="admin_product_edit"),
     path('products/delete/<int:pk>/', views.product_delete, name='admin_product_delete'),
     
@@ -34,5 +35,19 @@ urlpatterns = [
     
     path("returns/",views.admin_return_list,name="admin_return_list"),
     path("returns/handle/<int:item_id>/",views.admin_handle_return,name="admin_handle_return"),
+
+    path("coupons/", views.coupon_list, name="coupon_list"),
+    path("coupons/add/", views.add_coupon, name="add_coupon"),
+    path("coupons/toggle/<int:coupon_id>/", views.toggle_coupon, name="toggle_coupon"),
+    path("coupon/edit/<int:coupon_id>/", views.edit_coupon, name="edit_coupon"),
+    path("coupons/delete/<int:coupon_id>/", views.delete_coupon, name="delete_coupon"),
+    
+    path("sales-report/", views.sales_report, name="sales_report"),
+    path("sales-report/pdf/", views.export_sales_pdf, name="export_sales_pdf"),
+    path("sales-report/excel/", views.export_sales_excel, name="export_sales_excel"),
+
+    path("wallet/transactions/", views.admin_wallet_transactions, name="admin_wallet_transactions"),
+    path("wallet/transactions/<int:transaction_id>/", views.admin_wallet_transaction_detail, name="admin_wallet_transaction_detail"),
+    
     
 ]

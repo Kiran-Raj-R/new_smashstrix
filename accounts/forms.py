@@ -30,7 +30,6 @@ class UserSignupForm(forms.ModelForm):
         if not re.fullmatch(r"[A-Za-z]+", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return name.capitalize()
-    
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -39,15 +38,22 @@ class UserSignupForm(forms.ModelForm):
         return email
     
     def clean_mobile(self):
-        mob = self.cleaned_data.get('mobile',"").strip()
+        mob = self.cleaned_data.get('mobile',"")
+        if not mob:
+            return None
+        mob = mob.strip()
         if not re.fullmatch(r"\d{10}",mob):
             raise forms.ValidationError("Mobile number must contain exactly 10 numbers.")
         if len(set(mob))==1:
             raise forms.ValidationError("Enter a valid mobile number")
         if mob[0] not in "6789":
             raise forms.ValidationError("Enter a valid Indian number.")
-        if User.objects.filter(mobile=mob).exists():
-            raise forms.ValidationError("This mobile number is already registered.")
+        existing_user = User.objects.filter(mobile=mob).first()
+        if existing_user:
+            if not existing_user.is_active:
+                raise forms.ValidationError("Account exists but not verified. Please complete OTP verification.")
+            else:
+                raise forms.ValidationError("This mobile number is already registered.")
         return mob
     
     def clean(self):
@@ -62,6 +68,8 @@ class UserSignupForm(forms.ModelForm):
     
     def save(self, commit=True):
         user = super().save(commit=False)
+        mobile = self.cleaned_data.get("mobile")
+        user.mobile = mobile if mobile else None
         user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
