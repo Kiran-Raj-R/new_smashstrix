@@ -122,19 +122,33 @@ Nginx → Gunicorn → Django → PostgreSQL (Neon) → AWS S3
 ## 🗂 Project Structure
 
 smashstrix/
+
 |── accounts/
+
 │── adminpanel/
+
 │── cart/
+
 │── core/
+
 │── coupons/
+
 │── new_smashstrix/
+
 │── products/
+
 │── orders/
+
 │── user/
+
 │── wallet/
+
 │── wishlist/
+
 │── templates/
+
 │── static/
+
 │── manage.py
 
 ## 🧪 Key Functionalities Implemented
