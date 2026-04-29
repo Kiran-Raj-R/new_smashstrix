@@ -2,16 +2,21 @@ from PIL import Image
 from decimal import Decimal
 from django.core.files.base import ContentFile
 import io
+import os
 
 def resize_image(image_field):
+
+    if not image_field:
+        return
 
     img = Image.open(image_field)
     img = img.convert("RGB")
     img.thumbnail((800, 800))
     buffer = io.BytesIO()
     img.save(buffer, format="JPEG")
-    file_name = image_field.name
-    image_field.save(file_name, ContentFile(buffer.getvalue()), save=False)  
+    buffer.seek(0)
+    file_name = os.path.basename(image_field.name)
+    image_field.save(file_name, ContentFile(buffer.getvalue()), save=False)
 
 def get_best_offer(product):
     product_offer = product.offer_percentage or 0
