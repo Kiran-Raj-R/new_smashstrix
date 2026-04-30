@@ -33,6 +33,9 @@ A full-featured e-commerce web application built using Django, featuring product
 * Return approval/rejection system
 * Wallet transaction tracking
 
+  ## Live Demo
+https://smashstrix.shop
+
 ## 🧠 Tech Stack
 
 ### Backend
@@ -58,6 +61,8 @@ A full-featured e-commerce web application built using Django, featuring product
 * AWS EC2 (Ubuntu)
 * Gunicorn (WSGI server)
 * Nginx (reverse proxy)
+* Google OAuth (Authentication)
+* HTTPS (Certbot SSL)
 
 ## ⚙️ Installation (Local Setup)
 
