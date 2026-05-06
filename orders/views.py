@@ -120,6 +120,7 @@ def place_order(request):
         WalletTransaction.objects.create(user=request.user,amount=total,
             transaction_type="debit",description=f"Payment for order {order.order_id}")
         order.status = "processing"
+        order.original_subtotal = order.subtotal
         order.save()
     cart_items.delete()
     request.session.pop("coupon_id", None)
@@ -198,36 +199,63 @@ def cancel_order(request, order_id):
 @login_required(login_url="login")
 @transaction.atomic
 def cancel_order_item(request, item_id):
-    item = get_object_or_404(OrderItem,id=item_id,order__user=request.user)
+    item = get_object_or_404(OrderItem, id=item_id, order__user=request.user)
     order = item.order
+
     if order.status not in ["pending", "processing"]:
         messages.error(request, "Item cannot be cancelled.")
         return redirect("order_detail", order_id=order.order_id)
+
     if item.status == "cancelled":
         messages.warning(request, "Item already cancelled.")
         return redirect("order_detail", order_id=order.order_id)
+
     if request.method == "POST":
-        reason = request.POST.get("reason","")
+        reason = request.POST.get("reason", "")
+
         if item.color_variant:
             item.color_variant.stock += item.quantity
             item.color_variant.save()
+
         item.status = "cancelled"
         item.cancel_reason = reason
         item.save()
+
         if order.payment_method != "COD":
             wallet, _ = Wallet.objects.get_or_create(user=request.user)
             refund_amount = calculate_item_refund(order, item)
             wallet.balance += refund_amount
             wallet.save()
+
             WalletTransaction.objects.create(user=request.user,amount=refund_amount,transaction_type="credit",
                 description=f"Refund for cancelled item in order {order.order_id}")
-        remaining_items = order.items.filter(status="ordered").count()
-        if remaining_items == 0:
+
+        remaining_items = order.items.filter(status="ordered")
+
+        if remaining_items.exists():
+            new_subtotal = sum(i.price * i.quantity for i in remaining_items)
+            order.subtotal = new_subtotal
+            order.tax = new_subtotal * Decimal("0.05")
+            order.shipping = Decimal("0") if new_subtotal > 5000 else Decimal("50")
+
+            if order.discount > 0:
+                original_total_items_value = sum(i.price * i.quantity for i in order.items.all())
+                if original_total_items_value > 0:
+                    discount_ratio = new_subtotal / original_total_items_value
+                    order.discount = order.discount * discount_ratio
+            order.total = order.subtotal + order.tax + order.shipping - order.discount
+            order.status = "processing"
+        else:
+            order.subtotal = Decimal("0")
+            order.tax = Decimal("0")
+            order.shipping = Decimal("0")
+            order.discount = Decimal("0")
+            order.total = Decimal("0")
             order.status = "cancelled"
-            order.save()
-        messages.success(request,"Item cancelled successfully.")
+        order.save()
+        messages.success(request, "Item cancelled successfully.")
         return redirect("order_detail", order_id=order.order_id)
-    return render(request,"orders/cancel_order_item.html",{"item":item})
+    return render(request, "orders/cancel_order_item.html", {"item": item})
 
 @login_required(login_url="login")
 def request_item_return(request, item_id):
