@@ -25,6 +25,7 @@ class Order(models.Model):
     order_id = models.CharField(max_length=20,unique=True,editable=False)
     address = models.ForeignKey(Address,on_delete=models.SET_NULL,null=True)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    original_subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     tax = models.DecimalField(max_digits=10, decimal_places=2)
     shipping = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)

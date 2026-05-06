@@ -153,7 +153,8 @@ def generate_invoice(order, order_items):
     return buffer
 
 def calculate_item_refund(order, item):
-    if order.subtotal <= 0:
+    base_subtotal = order.original_subtotal or order.subtotal
+    if base_subtotal <= 0:
         return item.total_price
     ratio = item.total_price / order.subtotal
     tax_share = order.tax * ratio
