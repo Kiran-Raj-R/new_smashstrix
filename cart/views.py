@@ -7,6 +7,8 @@ from .models import CartItem, Cart
 from .utils import get_or_create_cart
 from decimal import Decimal
 from wishlist.models import WishlistItem
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 MAX_CART_QTY = 5
 
@@ -45,10 +47,7 @@ def add_to_cart(request):
     cart_item.save()
     WishlistItem.objects.filter(wishlist__user=request.user,product=product).delete()
     messages.success(request, "Product added to cart successfully.")
-    return redirect("cart_detail")
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+    return redirect(request.META.get("HTTP_REFERER", "shop"))
 
 @require_POST
 @login_required(login_url="login")
