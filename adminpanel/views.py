@@ -362,9 +362,9 @@ def admin_order_list(request):
 @login_required(login_url='admin_login')
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
-    order_items = order.items.select_related("product","color_variant").prefetch_related("product__images")
+    order_items = order.items.select_related("product", "color_variant")\
+        .prefetch_related("product__images")
     if request.method == "POST":
-
         new_status = request.POST.get("status")
         if order.status in ["delivered", "cancelled"]:
             messages.error(request, "Finalized orders cannot be modified.")
