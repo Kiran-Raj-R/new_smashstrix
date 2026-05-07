@@ -20,6 +20,7 @@ from django.utils import timezone
 from .utils import get_filtered_orders,generate_sales_excel, generate_sales_pdf
 from django.db.models.functions import TruncDate, TruncMonth
 from orders.utils import calculate_item_refund
+from decimal import Decimal
 
 def admin_login(request):
     if request.user.is_authenticated and request.user.is_staff:
@@ -453,6 +454,29 @@ def admin_handle_return(request, item_id):
         wallet.save()
         WalletTransaction.objects.create(user=item.order.user,amount=refund_amount,transaction_type="credit",
             description=f"Refund for returned item in order {item.order.order_id}")
+        remaining_items = order.items.filter(status="ordered")
+
+        if remaining_items.exists():
+            new_subtotal = sum(i.price * i.quantity for i in remaining_items)
+            order.subtotal = new_subtotal
+            order.tax = new_subtotal * Decimal("0.05")
+            order.shipping = Decimal("0") if new_subtotal > 5000 else Decimal("50")
+
+            if order.discount > 0:
+                original_total_items_value = sum(i.price * i.quantity for i in order.items.all())
+                if original_total_items_value > 0:
+                    discount_ratio = new_subtotal / original_total_items_value
+                    order.discount = order.discount * discount_ratio
+            order.total = ( order.subtotal + order.tax + order.shipping - order.discount)
+
+        else:
+            order.subtotal = Decimal("0")
+            order.tax = Decimal("0")
+            order.shipping = Decimal("0")
+            order.discount = Decimal("0")
+            order.total = Decimal("0")
+            order.status = "cancelled"
+        order.save()
         messages.success(request, "Return approved, stock restored, and amount refunded to wallet.")
     elif action == "reject":
         item.return_status = "Rejected"
