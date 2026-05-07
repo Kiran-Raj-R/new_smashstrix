@@ -58,7 +58,7 @@ class EditProfileForm(forms.ModelForm):
         name = self.cleaned_data.get("first_name","").strip()
         if len(name) < 3:
             raise forms.ValidationError("First name must be atleast 3 characters long.")
-        if not re.fullmatch(r"[A-Za-z]+", name):
+        if not re.fullmatch(r"[A-Za-z]+(?: [A-Za-z]+)*", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return name.capitalize()
     
