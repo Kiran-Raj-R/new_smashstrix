@@ -172,26 +172,35 @@ def cancel_order(request, order_id):
     if order.status not in ["pending", "processing"]:
         messages.error(request, "This order cannot be cancelled.")
         return redirect("order_detail", order_id=order.order_id)
+    
     if request.method == "POST":
         reason = request.POST.get("reason", "")
-        for item in order.items.all():
+        active_items = order.items.filter(status="ordered")
+        for item in active_items:
             if item.color_variant:
                 item.color_variant.stock += item.quantity
                 item.color_variant.save()
-            else:
-                item.product.stock += item.quantity
-                item.product.save()
+            item.status = "cancelled"
+            item.cancel_reason = reason
+            item.save()
 
-        order.status = "cancelled"
-        order.cancel_reason = reason
-        order.save()
         if order.payment_method != "COD":
             wallet, _ = Wallet.objects.get_or_create(user=request.user)
             wallet.balance += order.total
             wallet.save()
             WalletTransaction.objects.create(user=request.user,amount=order.total,transaction_type="credit",
                 description=f"Refund for cancelled order {order.order_id}")
-            messages.success(request, "Order cancelled successfully and amount refund to wallet.")
+        order.subtotal = Decimal("0")
+        order.tax = Decimal("0")
+        order.shipping = Decimal("0")
+        order.discount = Decimal("0")
+        order.total = Decimal("0")
+
+        order.status = "cancelled"
+        order.cancel_reason = reason
+
+        order.save()
+        messages.success(request, "Order cancelled successfully and amount refund to wallet.")
         return redirect("order_detail", order_id=order.order_id)
 
     return render(request, "orders/cancel_order.html", {"order": order})

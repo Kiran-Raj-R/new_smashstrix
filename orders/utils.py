@@ -156,7 +156,7 @@ def calculate_item_refund(order, item):
     base_subtotal = order.original_subtotal or order.subtotal
     if base_subtotal <= 0:
         return item.total_price
-    ratio = item.total_price / order.subtotal
+    ratio = item.total_price / base_subtotal
     tax_share = order.tax * ratio
     shipping_share = order.shipping * ratio
     discount_share = order.discount * ratio
