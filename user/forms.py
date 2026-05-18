@@ -2,6 +2,8 @@ from django import forms
 from .models import Address
 from accounts.models import User
 import re
+from django.core.exceptions import ValidationError
+from PIL import Image
 
 class AddressForm(forms.ModelForm):
     class Meta:
@@ -46,12 +48,13 @@ class EditProfileForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email", "mobile"]
+        fields = ["first_name", "last_name", "email", "mobile","profile_image"]
         widgets = {
             'first_name' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'First name'}),
             'last_name' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Last Name'}),
             'mobile' : forms.TextInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Mob. No'}),
             'email' : forms.EmailInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm",'placeholder':'Email'}),
+            "profile_image": forms.ClearableFileInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm"}),
         }
 
     def clean_first_name(self):
@@ -85,6 +88,21 @@ class EditProfileForm(forms.ModelForm):
         if User.objects.filter(mobile=mob).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This mobile number is already registered.")
         return mob
+    
+    def clean_profile_image(self):
+        image = self.cleaned_data.get("profile_image")
+        if image:
+            if image.size > 5 * 1024 * 1024:
+                raise ValidationError("Image size must be below 5MB.")
+            allowed_types = ["image/jpeg","image/png","image/webp",]
+            if image.content_type not in allowed_types:
+                raise ValidationError("Only JPG, PNG, and WEBP images are allowed.")
+            try:
+                img = Image.open(image)
+                img.verify()
+            except Exception:
+                raise ValidationError("Uploaded file is not a valid image.")
+        return image
     
 class ChangePasswordForm(forms.Form):
     old_password = forms.CharField(widget=forms.PasswordInput(attrs={"class": "w-full border rounded px-3 py-2 text-sm","placeholder": "Current Password"}),label="Current Password")
