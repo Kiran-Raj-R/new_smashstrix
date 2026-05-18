@@ -2,6 +2,8 @@ from django import forms
 from .models import User
 import re
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 class UserSignupForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder':'Password'}),label='Password')
@@ -21,7 +23,7 @@ class UserSignupForm(forms.ModelForm):
         name = self.cleaned_data.get("first_name","").strip()
         if len(name) < 3:
             raise forms.ValidationError("First name must be atleast 3 characters long.")
-        if not re.fullmatch(r"[A-Za-z]+", name):
+        if not re.fullmatch(r"[A-Za-z]+(?: [A-Za-z]+)*", name):
             raise forms.ValidationError("Names should not contain only specical characters or numbers.")
         return name.capitalize()
     
@@ -60,10 +62,13 @@ class UserSignupForm(forms.ModelForm):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
-        if password1 and len(password1) < 8:
-            self.add_error('password1',"The password should have atleast 8 characters.")
         if password1 and password2 and password1 != password2:
             self.add_error('password2',"Passwords doesnot match.")
+        if password1:
+            try:
+                validate_password(password1)
+            except ValidationError as e:
+                self.add_error("password1", e)
         return cleaned_data
     
     def save(self, commit=True):
